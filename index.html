@@ -217,7 +217,7 @@ function save(){wr('pa-log-'+date,JSON.stringify(day))}
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,keepAct=false,undoX=null;
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null;
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
 function period(t){var h=parseInt(t.split(':')[0],10);return h<12?'Morning':(h<17?'Afternoon':'Evening')}
@@ -272,7 +272,7 @@ function addDid(name,c){
  save();render();toast('Added: '+name+' ('+c+')');
 }
 function act(a,v){
- if(a!=='resetfoods')resetArm=false;if(a!=='cleartoday')clrArm=false;
+ if(a!=='resetfoods')resetArm=false;if(a!=='cleartoday')clrArm=false;if(a!=='resetacts')actArm=false;
  if(a==='prev'){shift(-1)}
  else if(a==='next'){shift(1)}
  else if(a==='today'){date=today;day=load(date)}
@@ -311,8 +311,9 @@ function act(a,v){
   if(acts.some(function(x){return x[0].toLowerCase()===nn.toLowerCase()})){toast('That one is already there');return}
   acts.push([nn,parseInt((document.getElementById('newactc')||{}).value,10)||0]);saveActs();render();toast('Added: '+nn);return}
  else if(a==='adel'){var ai=parseInt(v,10),rem=acts.splice(ai,1)[0];saveActs();undoX={t:'act',i:ai,v:rem};render();toast('Removed: '+rem[0],'undox');return}
- else if(a==='undox'){if(undoX){if(undoX.t==='reset'){foods=undoX.f;saveFoods();ucal=undoX.c;saveCal()}else if(undoX.t==='clear'){if(undoX.d===date){day=undoX.v;save()}else{wr('pa-log-'+undoX.d,JSON.stringify(undoX.v))}}else if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
+ else if(a==='undox'){if(undoX){if(undoX.t==='acts'){acts=undoX.v;saveActs()}else if(undoX.t==='reset'){foods=undoX.f;saveFoods();ucal=undoX.c;saveCal()}else if(undoX.t==='clear'){if(undoX.d===date){day=undoX.v;save()}else{wr('pa-log-'+undoX.d,JSON.stringify(undoX.v))}}else if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
  else if(a==='keepact'){keepAct=!keepAct}
+ else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to remove all your own activities');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=[];saveActs();render();toast('Your own activities are removed','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
  else if(a==='togcal'){showCal=!showCal;wr('pa-showcal',showCal?'1':'0')}
@@ -533,7 +534,7 @@ function render(){
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add an activity</div><div class="row"><input type="text" id="newact" placeholder="what is it?"></div>';
  h+='<div class="row"><select class="pick" id="newactc">'+costOpts(1)+'</select><button class="small" data-a="addact">Add activity</button></div>';
  h+='</details><details class="sub2"><summary>Start over</summary><div class="row" style="margin-top:8px"><button class="small del" data-a="resetfoods">'+(resetArm?'Tap again to confirm':'Put the original food buttons back')+'</button></div>';
- h+='<div class="row"><button class="small del" data-a="cleartoday">'+(clrArm?'Tap again to confirm':'Clear everything logged for this day')+'</button></div></details>';
+ h+='<div class="row"><button class="small del" data-a="resetacts">'+(actArm?'Tap again to confirm':'Remove all my own activities')+'</button></div><div class="row"><button class="small del" data-a="cleartoday">'+(clrArm?'Tap again to confirm':'Clear everything logged for this day')+'</button></div></details>';
  h+='<div class="hint">The coin numbers are in the Coin numbers box above.</div></details></div>';
  h+='<footer>Saved on this phone. Rest is part of the job.</footer>';
  var app=document.getElementById('app');
