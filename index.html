@@ -183,7 +183,7 @@ function calUrl(d,o){
 }
 
 /* ---------- actions ---------- */
-var undoItem=null,popG=null,popA=null,popV=null;
+var elseText='',undoItem=null,popG=null,popA=null,popV=null;
 function clearToasts(){var o=document.querySelectorAll('.toast');for(var i=0;i<o.length;i++)o[i].remove()}
 function toast(m,undo){clearToasts();var t=document.createElement('div');t.className='toast';t.textContent=m;if(undo){var b=document.createElement('button');b.setAttribute('data-a','undo');b.textContent='Undo';t.appendChild(b)}document.body.appendChild(t);setTimeout(function(){t.remove()},undo?7000:2200)}
 function addDid(name,c){
@@ -197,7 +197,7 @@ function act(a,v){
  else if(a==='next'){shift(1)}
  else if(a==='today'){date=today;day=load(date)}
  else if(a==='color'){day.color=(day.color===v?null:v);if(day.color){day.totals=day.totals||{};}save()}
- else if(a==='did'){var i=v.split('|');addDid(i[0],parseInt(i[1],10));return}
+ else if(a==='did'){var i=v.split('|');var nm=i[0];if(nm==='Something else'){var et=(document.getElementById('elsetx')||{}).value||elseText;nm=et.trim()||'Something else';elseText=''}addDid(nm,parseInt(i[1],10));return}
  else if(a==='rm'){var ri=parseInt(v,10);undoItem={e:day.log[ri],i:ri,d:date};day.log.splice(ri,1);save();render();toast('Removed',true);return}
  else if(a==='undo'){if(undoItem&&undoItem.d===date){day.log.splice(Math.min(undoItem.i,day.log.length),0,undoItem.e);save()}undoItem=null;clearToasts()}
  else if(a==='sleepQ'){day.sleepQ=(day.sleepQ===v?'':v);save()}
@@ -267,8 +267,9 @@ function render(){
   });
   if(menuHtml){
    h+='<details><summary>The whole menu ('+lf+' coins or less)</summary>'+menuHtml;
-   h+='<div class="note" style="margin-top:8px">Something else? Pick the closest coin number.</div><div class="row">'+[1,2,3,4,5].filter(function(n){return n<=lf}).map(function(n){return '<button class="num" style="'+ts(n)+'" data-a="did" data-v="'+esc('Something else|'+n)+'">'+n+'</button>'}).join('')+'</div></details>';
+   h+='</details>';
   }
+  h+='<div class="tier" style="'+ts(2)+'">Something else</div><div class="row"><input type="text" id="elsetx" placeholder="What did you do?" value="'+esc(elseText)+'"></div><div class="hint">Type it, then tap what it cost in coins.</div><div class="row">'+[0,1,2,3,4,5].filter(function(n){return n<=lf}).map(function(n){return '<button class="num" style="'+ts(n)+'" data-a="did" data-v="'+esc('Something else|'+n)+'">'+n+'</button>'}).join('')+'</div>';
  }
  h+='</div>';
  /* ate */
@@ -333,6 +334,7 @@ document.addEventListener('input',function(ev){
  var id=ev.target.id;
  if(id==='pw'){day.painWhere=ev.target.value;save()}
  else if(id==='pwn'){day.painWhen=ev.target.value;save()}
+ else if(id==='elsetx'){elseText=ev.target.value}
  else if(id==='gas'){day.gas=ev.target.value;save()}
  else if(id==='atime'){addTime=ev.target.value}
 });
