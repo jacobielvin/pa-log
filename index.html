@@ -61,6 +61,8 @@ input[type=text]{font-size:1rem;height:44px;border-radius:12px;border:2px solid 
 .q span{min-width:0;overflow-wrap:anywhere}
 .q b,.item b{background:var(--k,var(--pc));color:var(--kt,#fff);border-radius:50%;min-width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;flex:none}
 details{margin-top:8px}
+details.sub2{border:2px solid #e6dcc6;border-radius:12px;background:#fff;padding:2px 10px 8px}
+details.sub2>summary{font-size:1rem;padding:10px 0}
 summary{min-height:44px;display:flex;align-items:center;font-weight:800;color:#a52a1d;font-size:1rem;cursor:pointer}
 .tier{margin:8px 0 2px;font-weight:800;display:inline-block;border-radius:999px;padding:1px 12px;background:var(--k,var(--pc));color:var(--kt,#fff);font-size:.9rem}
 .item{width:100%;min-height:44px;border-radius:10px;border:3px solid var(--k,var(--pc));background:var(--kl,var(--pl));margin:3px 0;display:flex;justify-content:space-between;align-items:center;padding:4px 10px;font-size:1rem;font-weight:600;text-align:left;gap:8px;color:#2b2420}
@@ -505,10 +507,10 @@ function render(){
  function costOpts(sel){var o='';for(var n=0;n<=10;n++)o+='<option value="'+n+'"'+(n===sel?' selected':'')+'>'+(n===0?'Free':n+(n===1?' coin':' coins'))+'</option>';return o}
  h+='<div class="card" style="--ac:#5a4a3a"><details><summary>Make it yours</summary>';
  h+='<div class="hint">Everything here is saved on this phone. Past days keep what was logged, even if a button is removed.</div>';
- h+='<h2 style="margin-top:10px">Show or hide</h2>';
+ h+='<details class="sub2"><summary>Show or hide food and calories</summary>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Food section: '+(showFood?'showing':'hidden')+'</span><button class="small" data-a="togfood">'+(showFood?'Hide it':'Show it')+'</button></div>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Calories: '+(showCal?'showing':'hidden')+'</span><button class="small" data-a="togcal">'+(showCal?'Hide them':'Show them')+'</button></div>';
- h+='<h2 style="margin-top:14px">Food and drink buttons</h2>';
+ h+='</details><details class="sub2"><summary>Food and drink buttons</summary>';
  foods.forEach(function(g,gi){
   if(!g.items.length)return;
   h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div>';
@@ -523,15 +525,15 @@ function render(){
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
  h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select><button class="small" data-a="addfood">Add button</button></div>';
- h+='<h2 style="margin-top:14px">My own activities</h2>';
+ h+='</details><details class="sub2"><summary>My own activities</summary>';
  if(!acts.length)h+='<div class="hint">None yet. Add one below, or use "Keep it as a button" under Something else in the activity box.</div>';
  acts.forEach(function(a,ai){
   h+='<div class="ed"><input type="text" data-ed="aname" data-i="'+ai+'" value="'+esc(a[0])+'" aria-label="Activity name"><div class="row"><select class="pick" data-ed="acost" data-i="'+ai+'" aria-label="Cost">'+costOpts(a[1])+'</select><button class="small del" data-a="adel" data-v="'+ai+'">Remove</button></div></div>';
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add an activity</div><div class="row"><input type="text" id="newact" placeholder="what is it?"></div>';
  h+='<div class="row"><select class="pick" id="newactc">'+costOpts(1)+'</select><button class="small" data-a="addact">Add activity</button></div>';
- h+='<div class="row" style="margin-top:14px"><button class="small del" data-a="resetfoods">'+(resetArm?'Tap again to confirm':'Put the original food buttons back')+'</button></div>';
- h+='<div class="row"><button class="small del" data-a="cleartoday">'+(clrArm?'Tap again to confirm':'Clear everything logged for this day')+'</button></div>';
+ h+='</details><details class="sub2"><summary>Start over</summary><div class="row" style="margin-top:8px"><button class="small del" data-a="resetfoods">'+(resetArm?'Tap again to confirm':'Put the original food buttons back')+'</button></div>';
+ h+='<div class="row"><button class="small del" data-a="cleartoday">'+(clrArm?'Tap again to confirm':'Clear everything logged for this day')+'</button></div></details>';
  h+='<div class="hint">The coin numbers are in the Coin numbers box above.</div></details></div>';
  h+='<footer>Saved on this phone. Rest is part of the job.</footer>';
  var app=document.getElementById('app');
