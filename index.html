@@ -89,6 +89,15 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .pop{animation:pop .3s ease-out both}
 @keyframes pop{0%{transform:scale(.78)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}}
+.fb{display:flex;gap:4px;min-width:0}
+.fb .q{flex:1}
+.q .pl{font-style:normal;font-weight:900;font-size:1.4rem;color:var(--k);flex:none;line-height:1}
+.mn{width:46px;flex:none;border-radius:12px;border:3px solid var(--k);background:#fff;color:var(--k);font-size:1.6rem;font-weight:900;line-height:1}
+.mn:active{transform:scale(.94)}
+.ed{margin:6px 0 10px;padding:8px;border:2px solid #e6dcc6;border-radius:12px;background:#fff}
+.ed input[type=text]{width:100%;flex:none;margin-bottom:2px}
+.sel{height:44px;border-radius:12px;border:2px solid #b9a98f;background:#fff;font-size:1rem;padding:0 8px;min-width:0;color:#2b2420}
+.small.del{border-color:#c0392b;color:#c0392b}
 .dash .dg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:4px 0 12px}
 .dash .dt2{font-weight:800;color:#a52a1d;font-size:1.05rem;margin-top:8px}
 .dc{border:3px solid transparent;border-radius:12px;background:transparent;padding:5px 0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;color:#2b2420;font-weight:800;font-size:.9rem}
@@ -155,6 +164,19 @@ function wr(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
 function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){s=null}
  return s&&s.R?s:{R:3,Y:6,G:10}}
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
+/* food buttons and own activities: saved on this phone; bad data falls back to the originals */
+function defaultFoods(){return FOODS.map(function(g){return {n:g[0],c:g[1],l:g[2],items:g[3].slice()}})}
+function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.parse(s):null}catch(e){s=null}
+ if(!Array.isArray(s)||s.length!==3)return d;
+ for(var i=0;i<3;i++){if(!Array.isArray(s[i]))return d}
+ for(var j=0;j<3;j++)d[j].items=s[j].filter(function(x){return typeof x==='string'&&x.trim()}).map(function(x){return x.trim()});
+ return d}
+function saveFoods(){wr('pa-foods',JSON.stringify(foods.map(function(g){return g.items})))}
+function loadActs(){var s=rd('pa-acts');try{s=s?JSON.parse(s):[]}catch(e){s=[]}
+ if(!Array.isArray(s))return [];
+ return s.filter(function(a){return Array.isArray(a)&&typeof a[0]==='string'&&a[0].trim()&&typeof a[1]==='number'&&a[1]>=0&&a[1]<=10})}
+function saveActs(){wr('pa-acts',JSON.stringify(acts))}
+function foodCanon(n){var l=String(n).toLowerCase();for(var g=0;g<foods.length;g++)for(var i=0;i<foods[g].items.length;i++)if(foods[g].items[i].toLowerCase()===l)return foods[g].items[i];return null}
 function blank(){return {color:null,log:[],sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
 function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];return b}catch(e){return blank()}}
 function save(){wr('pa-log-'+date,JSON.stringify(day))}
@@ -162,7 +184,7 @@ function save(){wr('pa-log-'+date,JSON.stringify(day))}
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),addTime='',pickSize='';
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),addTime='',pickSize='',resetArm=false,keepAct=false,undoX=null;
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
 function period(t){var h=parseInt(t.split(':')[0],10);return h<12?'Morning':(h<17?'Afternoon':'Evening')}
@@ -208,7 +230,7 @@ function calUrl(d,o){
 /* ---------- actions ---------- */
 var elseText='',undoItem=null,popG=null,popA=null,popV=null;
 function clearToasts(){var o=document.querySelectorAll('.toast');for(var i=0;i<o.length;i++)o[i].remove()}
-function toast(m,undo){clearToasts();var t=document.createElement('div');t.className='toast';t.textContent=m;if(undo){var b=document.createElement('button');b.setAttribute('data-a','undo');b.textContent='Undo';t.appendChild(b)}document.body.appendChild(t);setTimeout(function(){t.remove()},undo?7000:2200)}
+function toast(m,undo){clearToasts();var t=document.createElement('div');t.className='toast';t.textContent=m;if(undo){var b=document.createElement('button');b.setAttribute('data-a',typeof undo==='string'?undo:'undo');b.textContent='Undo';t.appendChild(b)}document.body.appendChild(t);setTimeout(function(){t.remove()},undo?7000:2200)}
 function addDid(name,c){
  var t=(date===today)?nowT():(addTime||'12:00');
  day.log.push({k:'did',t:t,x:name,c:c});
@@ -216,11 +238,17 @@ function addDid(name,c){
  save();render();toast('Added: '+name+' ('+c+')');
 }
 function act(a,v){
+ if(a!=='resetfoods')resetArm=false;
  if(a==='prev'){shift(-1)}
  else if(a==='next'){shift(1)}
  else if(a==='today'){date=today;day=load(date)}
  else if(a==='color'){day.color=(day.color===v?null:v);if(day.color){day.totals=day.totals||{};}save()}
- else if(a==='did'){var i=v.split('|');var nm=i[0];if(nm==='Something else'){var et=(document.getElementById('elsetx')||{}).value||elseText;nm=et.trim()||'Something else';elseText=''}addDid(nm,parseInt(i[1],10));return}
+ else if(a==='did'){var i=v.split('|');var nm=i[0];var cst=parseInt(i[1],10);
+  if(nm==='Something else'){var et=(document.getElementById('elsetx')||{}).value||elseText;nm=et.trim()||'Something else';elseText='';
+   var sv=nm.replace(/\|/g,'/');
+   if(keepAct&&nm!=='Something else'&&!acts.some(function(x){return x[0].toLowerCase()===sv.toLowerCase()})){acts.push([sv,cst]);saveActs()}
+   keepAct=false}
+  addDid(nm,cst);return}
  else if(a==='rm'){var ri=parseInt(v,10);undoItem={e:day.log[ri],i:ri,d:date};day.log.splice(ri,1);save();render();toast('Removed',true);return}
  else if(a==='undo'){if(undoItem&&undoItem.d===date){day.log.splice(Math.min(undoItem.i,day.log.length),0,undoItem.e);save()}undoItem=null;clearToasts()}
  else if(a==='sleepQ'){day.sleepQ=(day.sleepQ===v?'':v);save()}
@@ -233,8 +261,25 @@ function act(a,v){
  else if(a==='addate'){
   var tx=(document.getElementById('atext')||{}).value||'';var tm=(date===today)?nowT():'12:00';
   if(!tx.trim()){toast('Type what you ate');return}
-  day.log.push({k:'ate',t:tm,x:tx.trim()});save();
+  day.log.push({k:'ate',t:tm,x:foodCanon(tx.trim())||tx.trim()});save();
  }
+ else if(a==='foodminus'){for(var q2=day.log.length-1;q2>=0;q2--){if(day.log[q2].k==='ate'&&day.log[q2].x===v){undoItem={e:day.log[q2],i:q2,d:date};day.log.splice(q2,1);break}}save();render();toast('Took one off: '+v,true);return}
+ else if(a==='keepfood'){var kn=((document.getElementById('atext')||{}).value||'').trim();if(!kn){toast('Type what you ate');return}
+  var kg=parseInt((document.getElementById('keepgrp')||{}).value,10)||0;var ex=foodCanon(kn);
+  if(ex)kn=ex;else{foods[kg].items.push(kn);saveFoods()}
+  day.log.push({k:'ate',t:(date===today)?nowT():(addTime||'12:00'),x:kn});save();render();toast('Added, and kept as a button: '+kn);return}
+ else if(a==='addfood'){var an=((document.getElementById('newfood')||{}).value||'').trim();if(!an){toast('Type the name first');return}
+  if(foodCanon(an)){toast('That button is already there');return}
+  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();render();toast('Button added: '+an);return}
+ else if(a==='fdel'){var fp=v.split('|'),fg=+fp[0],fi=+fp[1],fn=foods[fg].items[fi];foods[fg].items.splice(fi,1);saveFoods();undoX={t:'food',g:fg,i:fi,v:fn};render();toast('Removed button: '+fn,'undox');return}
+ else if(a==='fup'||a==='fdn'){var mp=v.split('|'),mg=+mp[0],mi=+mp[1],mj=(a==='fup')?mi-1:mi+1,arr=foods[mg].items;if(mj>=0&&mj<arr.length){var tmp=arr[mi];arr[mi]=arr[mj];arr[mj]=tmp;saveFoods()}}
+ else if(a==='addact'){var nn=((document.getElementById('newact')||{}).value||'').trim().replace(/\|/g,'/');if(!nn){toast('Type the name first');return}
+  if(acts.some(function(x){return x[0].toLowerCase()===nn.toLowerCase()})){toast('That one is already there');return}
+  acts.push([nn,parseInt((document.getElementById('newactc')||{}).value,10)||0]);saveActs();render();toast('Added: '+nn);return}
+ else if(a==='adel'){var ai=parseInt(v,10),rem=acts.splice(ai,1)[0];saveActs();undoX={t:'act',i:ai,v:rem};render();toast('Removed: '+rem[0],'undox');return}
+ else if(a==='undox'){if(undoX){if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
+ else if(a==='keepact'){keepAct=!keepAct}
+ else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;foods=defaultFoods();saveFoods();render();toast('Original buttons are back');return}
  else if(a==='stepH'){var f=v.split('|');var cur2=parseFloat(day[f[0]]);if(isNaN(cur2))cur2=(f[0]==='sleepH'?7:0);cur2=Math.max(0,Math.min(24,cur2+parseFloat(f[1])));day[f[0]]=String(cur2);save()}
  else if(a==='clearH'){day[v]='';save()}
  else if(a==='cfg'){var x=v.split('|');cfg[x[0]]=Math.max(1,cfg[x[0]]+parseInt(x[1],10));saveSettings(cfg)}
@@ -350,6 +395,8 @@ function render(){
   var qs=QUICK.filter(function(q){return q[1]<=lf});
   if(qs.length)h+='<div class="qgrid">'+qs.map(function(q){return '<button class="q" style="'+ts(q[1])+'" data-a="did" data-v="'+esc(q[0]+'|'+q[1])+'"><span>'+esc(q[0])+'</span><b>'+q[1]+'</b></button>'}).join('')+'</div>';
   h+=freeHtml;
+  var mine=acts.map(function(a,i){return [a,i]}).filter(function(x){return x[0][1]<=lf});
+  if(mine.length)h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">My own</div><div class="qgrid">'+mine.map(function(x){return '<button class="q" style="'+ts(x[0][1])+'" data-a="did" data-v="'+esc(x[0][0]+'|'+x[0][1])+'"><span>'+esc(x[0][0])+'</span><b>'+x[0][1]+'</b></button>'}).join('')+'</div>';
   if(hiddenN)h+='<div class="hint">'+hiddenN+' heavier things are hidden. They cost more than the '+lf+' coin'+(lf===1?'':'s')+' you have left.</div>';
   var menuHtml='';
   MENU.forEach(function(t){
@@ -361,19 +408,22 @@ function render(){
    h+='<details><summary>The whole menu ('+lf+' coins or less)</summary>'+menuHtml;
    h+='</details>';
   }
-  h+='<div class="tier" style="'+ts(2)+'">Something else</div><div class="row"><input type="text" id="elsetx" placeholder="What did you do?" value="'+esc(elseText)+'"></div><div class="hint">Type it, then tap what it cost in coins.</div><div class="row">'+[0,1,2,3,4,5].filter(function(n){return n<=lf}).map(function(n){return '<button class="num" style="'+ts(n)+'" data-a="did" data-v="'+esc('Something else|'+n)+'">'+n+'</button>'}).join('')+'</div>';
+  h+='<div class="tier" style="'+ts(2)+'">Something else</div><div class="row"><input type="text" id="elsetx" placeholder="What did you do?" value="'+esc(elseText)+'"></div><div class="hint">Type it, then tap what it cost in coins.</div><div class="row"><button class="chip'+(keepAct?' on':'')+'" data-a="keepact">'+(keepAct?'✓ ':'')+'Keep it as a button</button></div><div class="row">'+[0,1,2,3,4,5].filter(function(n){return n<=lf}).map(function(n){return '<button class="num" style="'+ts(n)+'" data-a="did" data-v="'+esc('Something else|'+n)+'">'+n+'</button>'}).join('')+'</div>';
  }
  h+='</div>';
  /* ate */
- h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap what you had. Tap again for another one.</small></h2>';
- FOODS.forEach(function(g){
-  h+='<div class="tier" style="--k:'+g[1]+';--kt:#fff">'+g[0]+'</div><div class="qgrid">'+g[3].map(function(n){
+ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap to add one. Tap − to take one off.</small></h2>';
+ foods.forEach(function(g){
+  if(!g.items.length)return;
+  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid">'+g.items.map(function(n){
    var c=day.log.filter(function(e){return e.k==='ate'&&e.x===n}).length;
-   return '<button class="q" style="--k:'+g[1]+';--kl:'+g[2]+';--kt:#fff" data-a="food" data-v="'+esc(n)+'"><span>'+esc(n)+'</span>'+(c?'<b>'+c+'</b>':'')+'</button>';
+   var st='--k:'+g.c+';--kl:'+g.l+';--kt:#fff';
+   return '<div class="fb" style="'+st+'"><button class="q" data-a="food" data-v="'+esc(n)+'"><span>'+esc(n)+'</span>'+(c?'<b>'+c+'</b>':'<em class="pl">+</em>')+'</button>'+(c?'<button class="mn" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take one off '+esc(n)+'">−</button>':'')+'</div>';
   }).join('')+'</div>';
  });
  h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div>';
- h+='<button class="big" data-a="addate">Add</button></div>';
+ h+='<div class="row"><span class="lbl" style="width:auto">Keep it under</span><select class="sel" id="keepgrp">'+foods.map(function(g,k){return '<option value="'+k+'">'+g.n+'</option>'}).join('')+'</select></div>';
+ h+='<button class="big pale" data-a="addate">Add this once</button><button class="big" data-a="keepfood">Add it and keep it as a button</button></div>';
  /* today so far */
  h+='<div class="card" style="--ac:#8e2a55"><h2>Today so far</h2>';
  var ents=day.log.map(function(e,i){return [e,i]}).sort(function(a,b){return a[0].t<b[0].t?-1:(a[0].t>b[0].t?1:a[1]-b[1])});
@@ -408,6 +458,33 @@ function render(){
  ['R','Y','G'].forEach(function(c){h+='<div class="row"><span class="lbl">'+CN[c]+'</span><span class="stepper"><button data-a="cfg" data-v="'+c+'|-1">−</button><span>'+cfg[c]+' coins</span><button data-a="cfg" data-v="'+c+'|1">+</button></span></div>'});
  h+='<div class="row"><button class="small" data-a="cfgall" data-v="1">Add 1 to each color</button><button class="small" style="border-color:#c0392b;color:#c0392b" data-a="cfgall" data-v="-1">Take 1 off each color</button></div>';
  h+='<div class="hint">Add 1 after 2 weeks with no crashes. Take 1 off right after 2 crashes in one week.</div></details></div>';
+ /* editor: make it yours */
+ function grpOpts(sel){return foods.map(function(g,k){return '<option value="'+k+'"'+(k===sel?' selected':'')+'>'+g.n+'</option>'}).join('')}
+ function costOpts(sel){var o='';for(var n=0;n<=10;n++)o+='<option value="'+n+'"'+(n===sel?' selected':'')+'>'+(n===0?'Free':n+(n===1?' coin':' coins'))+'</option>';return o}
+ h+='<div class="card" style="--ac:#5a4a3a"><details><summary>Make it yours</summary>';
+ h+='<div class="hint">Everything here is saved on this phone. Past days keep what was logged, even if a button is removed.</div>';
+ h+='<h2 style="margin-top:10px">Food and drink buttons</h2>';
+ foods.forEach(function(g,gi){
+  if(!g.items.length)return;
+  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div>';
+  g.items.forEach(function(n,ii){
+   h+='<div class="ed"><input type="text" data-ed="fname" data-g="'+gi+'" data-i="'+ii+'" value="'+esc(n)+'" aria-label="Button name">'
+    +'<div class="row"><select class="sel" data-ed="fgrp" data-g="'+gi+'" data-i="'+ii+'" aria-label="Move to">'+grpOpts(gi)+'</select>'
+    +'<button class="small" data-a="fup" data-v="'+gi+'|'+ii+'" aria-label="Move up">↑</button><button class="small" data-a="fdn" data-v="'+gi+'|'+ii+'" aria-label="Move down">↓</button>'
+    +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div></div>';
+  });
+ });
+ h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
+ h+='<div class="row"><select class="sel" id="newgrp">'+grpOpts(0)+'</select><button class="small" data-a="addfood">Add button</button></div>';
+ h+='<h2 style="margin-top:14px">My own activities</h2>';
+ if(!acts.length)h+='<div class="hint">None yet. Add one below, or use "Keep it as a button" under Something else in the activity box.</div>';
+ acts.forEach(function(a,ai){
+  h+='<div class="ed"><input type="text" data-ed="aname" data-i="'+ai+'" value="'+esc(a[0])+'" aria-label="Activity name"><div class="row"><select class="sel" data-ed="acost" data-i="'+ai+'" aria-label="Cost">'+costOpts(a[1])+'</select><button class="small del" data-a="adel" data-v="'+ai+'">Remove</button></div></div>';
+ });
+ h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add an activity</div><div class="row"><input type="text" id="newact" placeholder="what is it?"></div>';
+ h+='<div class="row"><select class="sel" id="newactc">'+costOpts(1)+'</select><button class="small" data-a="addact">Add activity</button></div>';
+ h+='<div class="row" style="margin-top:14px"><button class="small del" data-a="resetfoods">'+(resetArm?'Tap again to confirm':'Put the original food buttons back')+'</button></div>';
+ h+='<div class="hint">The coin numbers are in the Coin numbers box above.</div></details></div>';
  h+='<footer>Saved on this phone. Rest is part of the job.</footer>';
  var app=document.getElementById('app');
  app.className=day.color||'';
@@ -436,6 +513,26 @@ document.addEventListener('input',function(ev){
  else if(id==='elsetx'){elseText=ev.target.value}
  else if(id==='gas'){day.gas=ev.target.value;save()}
  else if(id==='atime'){addTime=ev.target.value}
+});
+document.addEventListener('change',function(ev){
+ var t=ev.target,ed=t.getAttribute?t.getAttribute('data-ed'):null;if(!ed)return;
+ var g=parseInt(t.getAttribute('data-g'),10),i=parseInt(t.getAttribute('data-i'),10);
+ if(ed==='fname'){
+  var nm=t.value.trim(),old=foods[g]&&foods[g].items[i];
+  if(old===undefined||!nm||nm===old){render();return}
+  var ex=foodCanon(nm);
+  if(ex&&ex.toLowerCase()!==old.toLowerCase()){toast('That name is already used');render();return}
+  foods[g].items[i]=nm;saveFoods();
+  day.log.forEach(function(e){if(e.k==='ate'&&e.x===old)e.x=nm});save();
+  render();toast('Renamed');
+ }else if(ed==='fgrp'){
+  var to=parseInt(t.value,10);
+  if(foods[g]&&foods[to]&&to!==g){var it=foods[g].items.splice(i,1)[0];foods[to].items.push(it);saveFoods();render();toast('Moved to '+foods[to].n)}
+ }else if(ed==='aname'){
+  var an=t.value.trim().replace(/\|/g,'/');if(an&&acts[i]){acts[i][0]=an;saveActs()}render();
+ }else if(ed==='acost'){
+  if(acts[i]){acts[i][1]=parseInt(t.value,10)||0;saveActs()}render();
+ }
 });
 /* the calendar link needs fresh details: refresh the href when pressed */
 document.addEventListener('pointerdown',function(ev){
