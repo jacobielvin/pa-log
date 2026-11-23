@@ -311,12 +311,12 @@ function act(a,v){
   if(acts.some(function(x){return x[0].toLowerCase()===nn.toLowerCase()})){toast('That one is already there');return}
   acts.push([nn,parseInt((document.getElementById('newactc')||{}).value,10)||0]);saveActs();render();toast('Added: '+nn);return}
  else if(a==='adel'){var ai=parseInt(v,10),rem=acts.splice(ai,1)[0];saveActs();undoX={t:'act',i:ai,v:rem};render();toast('Removed: '+rem[0],'undox');return}
- else if(a==='undox'){if(undoX){if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
+ else if(a==='undox'){if(undoX){if(undoX.t==='reset'){foods=undoX.f;saveFoods();ucal=undoX.c;saveCal()}else if(undoX.t==='clear'){if(undoX.d===date){day=undoX.v;save()}else{wr('pa-log-'+undoX.d,JSON.stringify(undoX.v))}}else if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
  else if(a==='keepact'){keepAct=!keepAct}
- else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;day=blank();save();render();toast('Cleared');return}
+ else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
  else if(a==='togcal'){showCal=!showCal;wr('pa-showcal',showCal?'1':'0')}
- else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;foods=defaultFoods();saveFoods();ucal={};saveCal();render();toast('Original buttons are back');return}
+ else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;undoX={t:'reset',f:JSON.parse(JSON.stringify(foods)),c:JSON.parse(JSON.stringify(ucal))};foods=defaultFoods();saveFoods();ucal={};saveCal();render();toast('Original buttons are back','undox');return}
  else if(a==='stepH'){var f=v.split('|');var cur2=parseFloat(day[f[0]]);if(isNaN(cur2))cur2=(f[0]==='sleepH'?7:0);cur2=Math.max(0,Math.min(24,cur2+parseFloat(f[1])));day[f[0]]=String(cur2);save()}
  else if(a==='clearH'){day[v]='';save()}
  else if(a==='cfg'){var x=v.split('|');cfg[x[0]]=Math.max(1,cfg[x[0]]+parseInt(x[1],10));saveSettings(cfg)}
