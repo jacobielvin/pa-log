@@ -133,6 +133,8 @@ var MENU=[
  [10,'10 coins',['6-hour drive']]
 ];
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
+/* Pa's usual foods: edit the names here to add or change a button */
+var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Apple','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
 var SIZES=['bites','handful','bowl','plate'];
 var EYES=['Fine','Heavy','Red','Watery'];
 var PAIN=[['#26804a','#fff'],['#3f8a32','#fff'],['#8cbc3c','#2b2420'],['#b9c230','#2b2420'],['#e0c42a','#2b2420'],['#f2b51f','#2b2420'],['#f29a1d','#2b2420'],['#ee7a1f','#2b2420'],['#e4552a','#fff'],['#d33a2c','#fff'],['#b3202f','#fff']];
@@ -227,10 +229,11 @@ function act(a,v){
  else if(a==='energy'){var q=v.split('|');var cur=day.energy[q[0]];day.energy[q[0]]=(cur===parseInt(q[1],10)?null:parseInt(q[1],10));save()}
  else if(a==='crash'){day.crash=(day.crash===v?null:v);save()}
  else if(a==='size'){pickSize=(pickSize===v?'':v)}
+ else if(a==='food'){day.log.push({k:'ate',t:(date===today)?nowT():(addTime||'12:00'),x:v});save();render();toast('Added: '+v);return}
  else if(a==='addate'){
   var tx=(document.getElementById('atext')||{}).value||'';var tm=(date===today)?nowT():'12:00';
-  if(!pickSize&&!tx.trim()){toast('Pick a size or type what you ate');return}
-  day.log.push({k:'ate',t:tm,x:(pickSize?pickSize+(tx.trim()?' · ':''):'')+tx.trim()});pickSize='';save();
+  if(!tx.trim()){toast('Type what you ate');return}
+  day.log.push({k:'ate',t:tm,x:tx.trim()});save();
  }
  else if(a==='stepH'){var f=v.split('|');var cur2=parseFloat(day[f[0]]);if(isNaN(cur2))cur2=(f[0]==='sleepH'?7:0);cur2=Math.max(0,Math.min(24,cur2+parseFloat(f[1])));day[f[0]]=String(cur2);save()}
  else if(a==='clearH'){day[v]='';save()}
@@ -362,8 +365,14 @@ function render(){
  }
  h+='</div>';
  /* ate */
- h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something</h2><div class="row">'+chips(SIZES,pickSize,'size',SIZEC,true,'size')+'</div>';
- h+='<div class="row"><input type="text" id="atext" placeholder="what? (oatmeal, eggs…)"></div>';
+ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap what you had. Tap again for another one.</small></h2>';
+ FOODS.forEach(function(g){
+  h+='<div class="tier" style="--k:'+g[1]+';--kt:#fff">'+g[0]+'</div><div class="qgrid">'+g[3].map(function(n){
+   var c=day.log.filter(function(e){return e.k==='ate'&&e.x===n}).length;
+   return '<button class="q" style="--k:'+g[1]+';--kl:'+g[2]+';--kt:#fff" data-a="food" data-v="'+esc(n)+'"><span>'+esc(n)+'</span>'+(c?'<b>'+c+'</b>':'')+'</button>';
+  }).join('')+'</div>';
+ });
+ h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div>';
  h+='<button class="big" data-a="addate">Add</button></div>';
  /* today so far */
  h+='<div class="card" style="--ac:#8e2a55"><h2>Today so far</h2>';
