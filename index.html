@@ -89,11 +89,18 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .pop{animation:pop .3s ease-out both}
 @keyframes pop{0%{transform:scale(.78)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}}
-.fb{display:flex;gap:4px;min-width:0}
-.fb .q{flex:1}
-.q .pl{font-style:normal;font-weight:900;font-size:1.4rem;color:var(--k);flex:none;line-height:1}
-.mn{width:46px;flex:none;border-radius:12px;border:3px solid var(--k);background:#fff;color:var(--k);font-size:1.6rem;font-weight:900;line-height:1}
-.mn:active{transform:scale(.94)}
+.fb{display:flex;align-items:stretch;min-width:0;min-height:52px;border:3px solid var(--k);border-radius:12px;background:var(--kl);overflow:hidden}
+.fb button{border:0;background:transparent;color:#2b2420;font:inherit;cursor:pointer;padding:0;border-radius:0}
+.fb button:active{background:rgba(0,0,0,.1)}
+.fb .fm{width:42px;flex:none;font-size:1.8rem;font-weight:900;color:var(--k);line-height:1;border-right:2px solid var(--k)}
+.fb .fn{flex:1;min-width:0;text-align:left;padding:4px 6px;font-size:.95rem;font-weight:700;display:flex;flex-direction:column;justify-content:center;line-height:1.15}
+.fb .fn0{padding-left:10px}
+.fb .fn span{overflow-wrap:anywhere}
+.fb .fn small{font-weight:600;font-size:.8rem;color:#4a3d30}
+.fb .fp{width:46px;flex:none;display:flex;align-items:center;justify-content:center}
+.fb .fp b{background:var(--k);color:var(--kt);border-radius:50%;min-width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:.95rem}
+.fb .fp em{font-style:normal;font-weight:900;font-size:1.6rem;color:var(--k);line-height:1}
+.calin{width:90px!important;flex:none!important;text-align:center}
 .ed{margin:6px 0 10px;padding:8px;border:2px solid #e6dcc6;border-radius:12px;background:#fff}
 .ed input[type=text]{width:100%;flex:none;margin-bottom:2px}
 .pick{height:44px;border-radius:12px;border:2px solid #b9a98f;background:#fff;font-size:1rem;padding:0 8px;min-width:0;color:#2b2420}
@@ -145,6 +152,23 @@ var MENU=[
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
 var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Apple','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
+/* Rough calories per tap: [number, what one tap means, where the number came from]. Editable in Make it yours. */
+var CALDEF={
+ 'Eggs':[70,'1 large egg','typical value'],
+ 'Jimmy Dean sausage':[220,'3 cooked links','Jimmy Dean label, original links'],
+ 'Greek yogurt':[100,'3/4 cup, H-E-B nonfat plain','H-E-B label. Whole milk would be 210'],
+ 'Cheese':[110,'1 oz sharp cheddar','typical value'],
+ 'Apple':[95,'1 medium','typical value'],
+ 'Banana':[105,'1 medium','typical value'],
+ 'Strawberries':[50,'1 cup','typical value'],
+ 'Celery':[10,'1 stalk','typical value'],
+ 'Pepsi':[150,'12 oz can','typical label'],
+ 'Coke':[140,'12 oz can','typical label'],
+ 'H-E-B Cola':[170,'12 oz can','H-E-B label, cane sugar pack says 180'],
+ '2% milk':[120,'1 cup','typical value'],
+ 'Hot cocoa (Keurig)':[80,'1 cup','a guess, depends on the brand'],
+ 'Truffle chocolates':[53,'1 piece','Central Market label, 210 per 4 pieces']
+};
 var SIZES=['bites','handful','bowl','plate'];
 var EYES=['Fine','Heavy','Red','Watery'];
 var PAIN=[['#26804a','#fff'],['#3f8a32','#fff'],['#8cbc3c','#2b2420'],['#b9c230','#2b2420'],['#e0c42a','#2b2420'],['#f2b51f','#2b2420'],['#f29a1d','#2b2420'],['#ee7a1f','#2b2420'],['#e4552a','#fff'],['#d33a2c','#fff'],['#b3202f','#fff']];
@@ -166,6 +190,12 @@ function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){
  return s&&s.R?s:{R:3,Y:6,G:10}}
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
 /* food buttons and own activities: saved on this phone; bad data falls back to the originals */
+function loadCal(){var r=rd('pa-cal'),q;try{q=r?JSON.parse(r):{}}catch(e){q={}}
+ if(!q||typeof q!=='object'||Array.isArray(q))return {};
+ var o={};for(var k in q){if(q[k]===null||(typeof q[k]==='number'&&q[k]>=0&&q[k]<=5000))o[k]=q[k]}return o}
+function saveCal(){wr('pa-cal',JSON.stringify(ucal))}
+function calOf(n){if(Object.prototype.hasOwnProperty.call(ucal,n))return ucal[n];var d=CALDEF[n];return d?d[0]:null}
+function logCal(log){var t=0,miss=0;log.forEach(function(e){if(e.k!=='ate')return;var c=calOf(e.x);if(c===null||c===undefined)miss++;else t+=c});return {t:t,miss:miss}}
 function defaultFoods(){return FOODS.map(function(g){return {n:g[0],c:g[1],l:g[2],items:g[3].slice()}})}
 function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.parse(s):null}catch(e){s=null}
  if(!Array.isArray(s)||s.length!==3)return d;
@@ -185,7 +215,7 @@ function save(){wr('pa-log-'+date,JSON.stringify(day))}
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),addTime='',pickSize='',resetArm=false,keepAct=false,undoX=null;
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,keepAct=false,undoX=null;
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
 function period(t){var h=parseInt(t.split(':')[0],10);return h<12?'Morning':(h<17?'Afternoon':'Evening')}
@@ -216,7 +246,8 @@ function detailsOf(o,d){
  if(en.length)L.push('Energy (1-5): '+en.join(', '));
  if(o.gas)L.push('Ran out of gas at: '+o.gas);
  var ate=o.log.filter(function(e){return e.k==='ate'}).sort(function(a,b){return a.t<b.t?-1:1});
- if(ate.length){L.push('Ate:');ate.forEach(function(e){L.push('  '+e.t+' '+e.x)})}
+ if(showFood&&ate.length){L.push('Ate:');ate.forEach(function(e){L.push('  '+e.t+' '+e.x)})}
+ if(showFood&&showCal&&ate.length){var lc=logCal(o.log);if(lc.t)L.push('Calories (rough guess): about '+lc.t+(lc.miss?' ('+lc.miss+' without a number)':''))}
  var did=o.log.filter(function(e){return e.k==='did'}).sort(function(a,b){return a.t<b.t?-1:1});
  if(did.length){L.push('Did:');did.forEach(function(e){L.push('  '+e.t+' '+e.x+' ('+e.c+')')})}
  return L.join('\n');
@@ -280,7 +311,9 @@ function act(a,v){
  else if(a==='adel'){var ai=parseInt(v,10),rem=acts.splice(ai,1)[0];saveActs();undoX={t:'act',i:ai,v:rem};render();toast('Removed: '+rem[0],'undox');return}
  else if(a==='undox'){if(undoX){if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
  else if(a==='keepact'){keepAct=!keepAct}
- else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;foods=defaultFoods();saveFoods();render();toast('Original buttons are back');return}
+ else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
+ else if(a==='togcal'){showCal=!showCal;wr('pa-showcal',showCal?'1':'0')}
+ else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;foods=defaultFoods();saveFoods();ucal={};saveCal();render();toast('Original buttons are back');return}
  else if(a==='stepH'){var f=v.split('|');var cur2=parseFloat(day[f[0]]);if(isNaN(cur2))cur2=(f[0]==='sleepH'?7:0);cur2=Math.max(0,Math.min(24,cur2+parseFloat(f[1])));day[f[0]]=String(cur2);save()}
  else if(a==='clearH'){day[v]='';save()}
  else if(a==='cfg'){var x=v.split('|');cfg[x[0]]=Math.max(1,cfg[x[0]]+parseInt(x[1],10));saveSettings(cfg)}
@@ -413,21 +446,28 @@ function render(){
  }
  h+='</div>';
  /* ate */
- h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap to add one. Tap − to take one off.</small></h2>';
+ if(showFood){
+ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a button to add one. Tap the − on the left to take one off.</small></h2>';
  foods.forEach(function(g){
   if(!g.items.length)return;
   h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid">'+g.items.map(function(n){
    var c=day.log.filter(function(e){return e.k==='ate'&&e.x===n}).length;
+   var cal=showCal?calOf(n):null;
    var st='--k:'+g.c+';--kl:'+g.l+';--kt:#fff';
-   return '<div class="fb" style="'+st+'"><button class="q" data-a="food" data-v="'+esc(n)+'"><span>'+esc(n)+'</span>'+(c?'<b>'+c+'</b>':'<em class="pl">+</em>')+'</button>'+(c?'<button class="mn" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take one off '+esc(n)+'">−</button>':'')+'</div>';
+   return '<div class="fb" style="'+st+'">'
+    +(c?'<button class="fm" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take one off '+esc(n)+'">\u2212</button>':'')
+    +'<button class="fn'+(c?'':' fn0')+'" data-a="food" data-v="'+esc(n)+'"><span>'+esc(n)+'</span>'+((cal!==null&&cal!==undefined)?'<small>'+cal+' cal</small>':'')+'</button>'
+    +'<button class="fp" data-a="food" data-v="'+esc(n)+'" aria-label="Add one '+esc(n)+'">'+(c?'<b>'+c+'</b>':'<em>+</em>')+'</button></div>';
   }).join('')+'</div>';
  });
+ if(showCal){var lc=logCal(day.log);h+='<div class="hint" style="margin-top:8px">'+(lc.t?'About <b>'+lc.t+'</b> calories so far today (rough guess).':'No calories counted yet.')+(lc.miss?' '+lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number.':'')+'</div>'}
  h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Keep it under</span><select class="pick" id="keepgrp">'+foods.map(function(g,k){return '<option value="'+k+'">'+g.n+'</option>'}).join('')+'</select></div>';
  h+='<button class="big pale" data-a="addate">Add this once</button><button class="big" data-a="keepfood">Add it and keep it as a button</button></div>';
+ }
  /* today so far */
  h+='<div class="card" style="--ac:#8e2a55"><h2>Today so far</h2>';
- var ents=day.log.map(function(e,i){return [e,i]}).sort(function(a,b){return a[0].t<b[0].t?-1:(a[0].t>b[0].t?1:a[1]-b[1])});
+ var ents=day.log.map(function(e,i){return [e,i]}).filter(function(x){return showFood||x[0].k!=='ate'}).sort(function(a,b){return a[0].t<b[0].t?-1:(a[0].t>b[0].t?1:a[1]-b[1])});
  if(!ents.length)h+='<div class="empty">Nothing yet</div>';
  ents.forEach(function(x){h+=entryHtml(x[0],x[1])});
  h+='</div>';
@@ -464,7 +504,10 @@ function render(){
  function costOpts(sel){var o='';for(var n=0;n<=10;n++)o+='<option value="'+n+'"'+(n===sel?' selected':'')+'>'+(n===0?'Free':n+(n===1?' coin':' coins'))+'</option>';return o}
  h+='<div class="card" style="--ac:#5a4a3a"><details><summary>Make it yours</summary>';
  h+='<div class="hint">Everything here is saved on this phone. Past days keep what was logged, even if a button is removed.</div>';
- h+='<h2 style="margin-top:10px">Food and drink buttons</h2>';
+ h+='<h2 style="margin-top:10px">Show or hide</h2>';
+ h+='<div class="row"><span style="flex:1;font-weight:700">Food section: '+(showFood?'showing':'hidden')+'</span><button class="small" data-a="togfood">'+(showFood?'Hide it':'Show it')+'</button></div>';
+ h+='<div class="row"><span style="flex:1;font-weight:700">Calories: '+(showCal?'showing':'hidden')+'</span><button class="small" data-a="togcal">'+(showCal?'Hide them':'Show them')+'</button></div>';
+ h+='<h2 style="margin-top:14px">Food and drink buttons</h2>';
  foods.forEach(function(g,gi){
   if(!g.items.length)return;
   h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div>';
@@ -472,7 +515,9 @@ function render(){
    h+='<div class="ed"><input type="text" data-ed="fname" data-g="'+gi+'" data-i="'+ii+'" value="'+esc(n)+'" aria-label="Button name">'
     +'<div class="row"><select class="pick" data-ed="fgrp" data-g="'+gi+'" data-i="'+ii+'" aria-label="Move to">'+grpOpts(gi)+'</select>'
     +'<button class="small" data-a="fup" data-v="'+gi+'|'+ii+'" aria-label="Move up">↑</button><button class="small" data-a="fdn" data-v="'+gi+'|'+ii+'" aria-label="Move down">↓</button>'
-    +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div></div>';
+    +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div>'
+    +'<div class="row"><span class="lbl" style="width:auto">Calories per tap</span><input type="text" inputmode="numeric" class="calin" data-ed="fcal" data-g="'+gi+'" data-i="'+ii+'" value="'+(calOf(n)===null||calOf(n)===undefined?'':calOf(n))+'" placeholder="none" aria-label="Calories per tap"></div>'
+    +((CALDEF[n]&&!Object.prototype.hasOwnProperty.call(ucal,n))?'<div class="hint">One tap = '+esc(CALDEF[n][1])+'. Source: '+esc(CALDEF[n][2])+'.</div>':'')+'</div>';
   });
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
@@ -523,9 +568,13 @@ document.addEventListener('change',function(ev){
   if(old===undefined||!nm||nm===old){render();return}
   var ex=foodCanon(nm);
   if(ex&&ex.toLowerCase()!==old.toLowerCase()){toast('That name is already used');render();return}
-  foods[g].items[i]=nm;saveFoods();
+  var oc=calOf(old);foods[g].items[i]=nm;saveFoods();if(oc!==null&&oc!==undefined){ucal[nm]=oc;saveCal()}
   day.log.forEach(function(e){if(e.k==='ate'&&e.x===old)e.x=nm});save();
   render();toast('Renamed');
+ }else if(ed==='fcal'){
+  var fn=foods[g]&&foods[g].items[i];
+  if(fn!==undefined){var raw=t.value.replace(/[^0-9]/g,'');ucal[fn]=raw===''?null:Math.min(5000,parseInt(raw,10));saveCal()}
+  render();
  }else if(ed==='fgrp'){
   var to=parseInt(t.value,10);
   if(foods[g]&&foods[to]&&to!==g){var it=foods[g].items.splice(i,1)[0];foods[to].items.push(it);saveFoods();render();toast('Moved to '+foods[to].n)}
