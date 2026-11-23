@@ -89,6 +89,27 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .pop{animation:pop .3s ease-out both}
 @keyframes pop{0%{transform:scale(.78)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}}
+.dash .dg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:4px 0 12px}
+.dash .dt2{font-weight:800;color:#a52a1d;font-size:1.05rem;margin-top:8px}
+.dc{border:3px solid transparent;border-radius:12px;background:transparent;padding:5px 0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;color:#2b2420;font-weight:800;font-size:.9rem}
+.dc.sel{border-color:#2b2420;background:#fff}
+.dc .wd{font-size:.9rem}.dc .dn{font-size:.85rem;font-weight:600;color:#4a3d30}.dc .sub{font-size:.8rem;font-weight:700;min-height:1em}
+.lights{overflow:hidden}
+.bulb{position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:38px;margin-top:8px;border-radius:50% 50% 50% 50%/58% 58% 42% 42%;background:var(--k);color:var(--kt);font-style:normal;font-weight:900;font-size:1rem;border:2px solid rgba(0,0,0,.4)}
+.bulb::before{content:"";position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:14px;height:8px;background:#5a4a3a;border-radius:3px 3px 0 0}
+.bulb::after{content:"";position:absolute;top:-6px;left:-60px;right:-60px;height:2px;background:#5a4a3a}
+.bulb.off{background:transparent;border:2px dashed #b9a98f;color:#8a7a66}
+.vb{display:flex;align-items:flex-end;width:28px;height:60px;border:2px solid #b9a98f;border-radius:8px;background:#fff;overflow:hidden}
+.vb i{display:block;width:100%}
+.vb.none{border-style:dashed;background:transparent}
+.nv{font-weight:800;font-size:.9rem;min-height:1.1em}
+.pc{display:flex;align-items:center;justify-content:center;min-width:32px;height:32px;border-radius:50%;background:var(--k);color:var(--kt);font-weight:800;font-size:1rem}
+.pc.none{background:transparent;border:2px dashed #b9a98f;color:#8a7a66}
+.cr b{font-size:1.35rem;line-height:1}.cr small{font-size:.8rem;font-weight:700}
+.cr.y b{color:#c0392b}.cr.n b{color:#26804a}.cr.none b{color:#8a7a66}
+.dsum{list-style:none;margin-top:4px}
+.dsum li{padding:8px 2px;border-top:1px solid #eadfc9;font-size:1rem}
+.dsum li.nudge{background:#e1eedf;border-radius:10px;padding:10px;font-weight:700;margin-top:6px;border-top:0}
 </style>
 </head>
 <body>
@@ -225,6 +246,74 @@ function act(a,v){
 function chips(list,cur,action,cmap,lvl,grp){var ci=lvl?list.indexOf(cur):-1;return list.map(function(x,i){var on=Array.isArray(cur)?cur.indexOf(x)>=0:cur===x;var c=(lvl&&ci>=0&&i<ci)?' lv':'';var st=cmap?' style="'+cs(cmap[i])+'"':'';return '<button class="chip'+c+(on?' on':'')+'"'+st+' data-a="'+action+'" data-v="'+esc(x)+'"'+(grp?' data-g="'+grp+'" data-i="'+i+'"':'')+'>'+esc(x)+'</button>'}).join('')}
 function stepper(field,unit){var v=day[field];return '<span class="stepper"><button data-a="stepH" data-v="'+field+'|-0.5">−</button><span>'+(v===''?'—':esc(v)+' '+unit)+'</span><button data-a="stepH" data-v="'+field+'|0.5">+</button>'+(v!==''?'<button data-a="clearH" data-v="'+field+'" title="clear" style="font-size:.8rem">✕</button>':'')+'</span>'}
 function entryHtml(e,idx){var st=e.k==='did'?ts(e.c||0):'--k:#8e2a55;--kt:#fff';return '<div class="entry" style="'+st+'"><span class="t">'+esc(e.t)+'</span><span class="tx">'+(e.k==='ate'?'🍽️ Ate: ':'⭐ ')+esc(e.x)+'</span>'+(e.k==='did'?'<span class="cc">'+e.c+'</span>':'')+'<button class="rm" data-a="rm" data-v="'+idx+'" aria-label="Remove">✕</button></div>'}
+/* ---------- week dashboard ---------- */
+var PCOL={R:['#c0392b','#fff'],Y:['#f0c24d','#2b2420'],G:['#2f7d46','#fff']};
+function addDays(s,n){var p=s.split('-');return ds(new Date(+p[0],+p[1]-1,+p[2]+n))}
+function fmt1(n){return String(Math.round(n*10)/10)}
+function dayData(d){
+ var o=load(d),ev=[],sp=0;
+ ['Morning','Afternoon','Evening'].forEach(function(p){if(o.energy&&o.energy[p])ev.push(o.energy[p])});
+ o.log.forEach(function(e){if(e.k==='did')sp+=e.c||0});
+ var sl=parseFloat(o.sleepH);if(isNaN(sl))sl=null;
+ return {d:d,o:o,sp:sp,tot:o.color?cfg[o.color]:0,sl:sl,
+  avg:ev.length?ev.reduce(function(a,b){return a+b},0)/ev.length:null,
+  has:!!(o.color||o.log.length||ev.length||(o.pain!==null&&o.pain!==undefined)||sl!==null||o.crash)};
+}
+function dashHtml(){
+ var days=[],i;for(i=6;i>=0;i--)days.push(dayData(addDays(today,-i)));
+ var any=days.some(function(x){return x.has});
+ function wdn(d){var p=d.split('-');return {w:new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString(undefined,{weekday:'short'}),n:+p[2]}}
+ function cell(x,inner){return '<button class="dc'+(x.d===date?' sel':'')+'" data-a="open" data-v="'+x.d+'">'+inner+'</button>'}
+ function row(title,cls,fn){return '<div class="dt2">'+title+'</div><div class="dg'+(cls?' '+cls:'')+'">'+days.map(function(x){return cell(x,fn(x))}).join('')+'</div>'}
+ var h='<div class="card dash" style="--ac:#c0392b"><h2>🎄 My week<small>The last 7 days. Tap a day to open it.</small></h2>';
+ h+=row('Plan color and coins spent','lights',function(x){
+  var w=wdn(x.d),c=x.o.color;
+  return '<span class="wd">'+w.w+'</span><span class="dn">'+w.n+'</span>'+(c?'<i class="bulb" style="--k:'+PCOL[c][0]+';--kt:'+PCOL[c][1]+'">'+c+'</i>':'<i class="bulb off">–</i>')+'<span class="sub">'+(c?x.sp+' of '+x.tot:'')+'</span>';
+ });
+ if(!any){return h+'<div class="empty">Nothing here yet. Fill in a day and the lights come on.</div></div>'}
+ h+=row('Energy (taller is better)','',function(x){
+  if(x.avg===null)return '<span class="vb none"></span><span class="nv">–</span>';
+  return '<span class="vb"><i style="height:'+Math.max(12,x.avg/5*100)+'%;background:'+ENERGYC[Math.round(x.avg)-1][0]+'"></i></span><span class="nv">'+fmt1(x.avg)+'</span>';
+ });
+ h+=row('Pain (0 is none)','',function(x){
+  var p=x.o.pain;
+  if(p===null||p===undefined)return '<span class="pc none">–</span>';
+  return '<span class="pc" style="'+cs(PAIN[p])+'">'+p+'</span>';
+ });
+ h+=row('Sleep','',function(x){
+  if(x.sl===null)return '<span class="vb none"></span><span class="nv">–</span>';
+  return '<span class="vb"><i style="height:'+Math.max(8,Math.min(x.sl,10)/10*100)+'%;background:#2b7fb0"></i></span><span class="nv">'+fmt1(x.sl)+' h</span>';
+ });
+ h+=row('Crash','',function(x){
+  var c=x.o.crash;
+  if(c==='Yes')return '<span class="cr y"><b>✕</b><br><small>Crash</small></span>';
+  if(c==='No')return '<span class="cr n"><b>✓</b><br><small>None</small></span>';
+  return '<span class="cr none"><b>–</b></span>';
+ });
+ /* plain words */
+ var logged=days.filter(function(x){return x.has}).length;
+ var cnt={R:0,Y:0,G:0};days.forEach(function(x){if(x.o.color)cnt[x.o.color]++});
+ var crashes=days.filter(function(x){return x.o.crash==='Yes'}).length;
+ var noc=days.filter(function(x){return x.o.crash==='No'}).length;
+ var ens=days.filter(function(x){return x.avg!==null}).map(function(x){return x.avg});
+ var sls=days.filter(function(x){return x.sl!==null}).map(function(x){return x.sl});
+ function mean(a){return a.reduce(function(s,v){return s+v},0)/a.length}
+ var streak=0,k;
+ for(k=0;k<30;k++){var c2=dayData(addDays(today,-k)).o.crash;if(k===0&&!c2)continue;if(c2==='No')streak++;else break}
+ var L=[];
+ L.push('Days filled in: <b>'+logged+' of 7</b>');
+ if(cnt.R+cnt.Y+cnt.G)L.push('Green days: <b>'+cnt.G+'</b> · Yellow: <b>'+cnt.Y+'</b> · Red: <b>'+cnt.R+'</b>');
+ if(crashes)L.push('Crashes this week: <b>'+crashes+'</b>');else if(noc)L.push('No crashes this week 🎄');
+ if(ens.length)L.push('Average energy: <b>'+fmt1(mean(ens))+' of 5</b>');
+ if(sls.length)L.push('Average sleep: <b>'+fmt1(mean(sls))+' hours</b>');
+ if(streak>0)L.push('Days in a row with no crash: <b>'+streak+'</b>');
+ h+='<ul class="dsum">'+L.map(function(t){return '<li>'+t+'</li>'}).join('');
+ if(crashes>=2)h+='<li class="nudge">'+crashes+' crashes this week. The plan says take 1 coin off each color. The Coin numbers box near the bottom does that.</li>';
+ else if(streak>=14)h+='<li class="nudge">'+streak+' days with no crash. The plan says you can add 1 coin to each color. The Coin numbers box near the bottom does that.</li>';
+ h+='</ul></div>';
+ return h;
+}
+
 function render(){
  var tot=total(),sp=spent(),lf=left();
  var h='';
@@ -295,6 +384,7 @@ function render(){
  h+='<a class="big" target="_blank" rel="noopener" href="'+esc(calUrl(date,day))+'">Save to my calendar</a>';
  h+='<div class="hint" style="text-align:center">Opens Google Calendar. Tap Save there.</div>';
  h+='<button class="big pale" data-a="copy">Copy today\'s summary</button></div>';
+ h+=dashHtml();
  /* past */
  var keys=[];try{for(var i2=0;i2<localStorage.length;i2++){var k=localStorage.key(i2);if(k&&k.indexOf('pa-log-')===0)keys.push(k.slice(7))}}catch(e){}
  for(var mk in mem){if(mk.indexOf('pa-log-')===0&&keys.indexOf(mk.slice(7))<0)keys.push(mk.slice(7))}
