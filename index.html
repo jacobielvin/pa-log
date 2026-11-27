@@ -258,6 +258,7 @@ function frac(n){var w=Math.floor(n+1e-9),r=n-w,m={'0.25':'¼','0.5':'½','0.75'
 function unitWord(q,n){var u=unitOf(n);return q>1?u.p:u.u}
 function fmtQ(q,n){return frac(q)+' '+unitWord(q,n)}
 function amtText(e){if(e.q!==undefined&&e.q!==null&&!isNaN(e.q))return frac(e.q)+' '+(e.un||unitWord(e.q,e.x));return e.a?String(e.a):''}
+function calNote(o){if(!showFood||!showCal)return '';if(!o.log.some(function(e){return e.k==='ate'}))return '';var lc=logCal(o.log);return lc.t?'about '+lc.t+' cal'+(lc.miss?'+':''):''}
 function logCal(log){var t=0,miss=0;log.forEach(function(e){if(e.k!=='ate')return;var c=calOf(e.x);if(c===null||c===undefined)miss++;else t+=c*((e.q!==undefined&&e.q!==null)?e.q:unitOf(e.x).d)});return {t:Math.round(t),miss:miss}}
 function defaultFoods(){return FOODS.map(function(g){return {n:g[0],c:g[1],l:g[2],items:g[3].slice()}})}
 function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.parse(s):null}catch(e){s=null}
@@ -282,7 +283,7 @@ function save(){wr('pa-log-'+date,JSON.stringify(day))}
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null,curN='';
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')!=='0',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null,curN='';
 /* once: sodas moved from cups to ounces, so drop any older cup settings saved for them */
 if(rd('pa-soda1')!=='1'){['Pepsi','Coke','H-E-B Cola','Soda','Water'].forEach(function(n){delete uunit[n];delete ustep[n];delete ucal[n]});saveUnits();saveSteps();saveCal();wr('pa-soda1','1')}
 function pad(n){return ('0'+n).slice(-2)}
@@ -452,6 +453,7 @@ function dashHtml(){
   if(x.sl===null)return '<span class="vb none"></span><span class="nv">–</span>';
   return '<span class="vb"><i style="height:'+Math.max(8,Math.min(x.sl,10)/10*100)+'%;background:#2b7fb0"></i></span><span class="nv">'+fmt1(x.sl)+' h</span>';
  });
+ if(showFood&&showCal){h+=row('Calories (rough guess)','',function(x){var has=x.o.log.some(function(e){return e.k==='ate'}),lc=logCal(x.o.log);return '<span class="nv">'+((has&&lc.t)?lc.t+(lc.miss?'+':''):'\u2013')+'</span>'})}
  h+=row('Crash','',function(x){
   var c=x.o.crash;
   if(c==='Yes')return '<span class="cr y"><b>✕</b><br><small>Crash</small></span>';
@@ -474,6 +476,7 @@ function dashHtml(){
  if(crashes)L.push('Crashes this week: <b>'+crashes+'</b>');else if(noc)L.push('No crashes this week 🎄');
  if(ens.length)L.push('Average energy: <b>'+fmt1(mean(ens))+' of 5</b>');
  if(sls.length)L.push('Average sleep: <b>'+fmt1(mean(sls))+' hours</b>');
+ if(showFood&&showCal){var cls=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}).filter(function(v){return v>0});if(cls.length)L.push('Average calories on days with food logged: <b>'+Math.round(mean(cls))+'</b> (rough guess)')}
  if(streak>0)L.push('Days in a row with no crash: <b>'+streak+'</b>');
  h+='<ul class="dsum">'+L.map(function(t){return '<li>'+t+'</li>'}).join('');
  if(crashes>=2)h+='<li class="nudge">'+crashes+' crashes this week. The plan says take 1 coin off each color. The Coin numbers box near the bottom does that.</li>';
@@ -581,7 +584,7 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
  keys.sort().reverse();keys=keys.slice(0,10);
  if(keys.length){
   h+='<div class="card"><details><summary>Past days</summary>';
-  keys.forEach(function(d){var o=load(d);h+='<div class="past"><div style="min-width:0"><div class="pd">'+esc(pretty(d))+'</div><div class="ps">'+esc(summaryOf(o,d))+'</div></div><div style="display:flex;gap:6px;flex:none"><button class="small" data-a="open" data-v="'+d+'">Open</button><a class="small" style="display:flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="'+esc(calUrl(d,o))+'">Cal</a></div></div>'});
+  keys.forEach(function(d){var o=load(d);h+='<div class="past"><div style="min-width:0"><div class="pd">'+esc(pretty(d))+'</div><div class="ps">'+esc(summaryOf(o,d)+(calNote(o)?' \u00B7 '+calNote(o):''))+'</div></div><div style="display:flex;gap:6px;flex:none"><button class="small" data-a="open" data-v="'+d+'">Open</button><a class="small" style="display:flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="'+esc(calUrl(d,o))+'">Cal</a></div></div>'});
   h+='</details></div>';
  }
  /* settings */
