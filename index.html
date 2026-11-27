@@ -206,7 +206,7 @@ var MENU=[
 ];
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
-var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey']],['Drinks','#2b7fb0','#dcecf5',['Soda','2% milk','Hot cocoa (Keurig)','Water','Michelob Golden Light','Windsor whiskey']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
+var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey','Cooking oil']],['Drinks','#2b7fb0','#dcecf5',['Soda','2% milk','Hot cocoa (Keurig)','Water','Michelob Golden Light','Windsor whiskey']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
 /* How each food is measured, like the Food Tracker: one unit per food, and one tap adds one step of it.
    t = cup, oz, tbsp, tsp (or count for whole items like eggs). st = how much one tap adds. c = rough calories in ONE unit.
    d = what one old single tap meant (only used for days logged before amounts existed). s = where the number came from. All editable in Make it yours. */
@@ -239,6 +239,7 @@ var ITEMS={
  'Cookie':{t:'count',u:'cookie',p:'cookies',st:1,c:150,d:1,s:'1 medium cookie, typical value. Varies a lot by size'},
  'Michelob Golden Light':{t:'oz',st:12,sts:[12],c:9.17,d:12,s:'about 110 per 12 oz can. Check the label if it is a different light beer'},
  'Windsor whiskey':{t:'oz',st:1,c:64,d:1,s:'80 proof whiskey is about 64 per oz, so a 1.5 oz shot is about 96'},
+ 'Cooking oil':{t:'tbsp',st:1,c:120,d:1,s:'about 120 per tablespoon for most cooking oils'},
  'Water':{t:'oz',st:20,sts:[16.9,20],c:0,d:20,s:'no calories'},
  'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',st:1,c:53,d:1,s:'Central Market label, 210 per 4 truffles'}
 };
@@ -320,6 +321,9 @@ function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.pars
  if(rd('pa-foodsv3')!=='1'){/* once: add the drinks that are new in this version */
   ['Michelob Golden Light','Windsor whiskey'].forEach(function(x){var l=x.toLowerCase();if(!d.some(function(g){return g.items.some(function(y){return y.toLowerCase()===l})}))d[1].items.push(x)});
   wr('pa-foodsv3','1');wr('pa-foods',JSON.stringify(d.map(function(g){return g.items})))}
+ if(rd('pa-foodsv4')!=='1'){
+  if(!d.some(function(g){return g.items.some(function(y){return y.toLowerCase()==='cooking oil'})}))d[0].items.push('Cooking oil');
+  wr('pa-foodsv4','1');wr('pa-foods',JSON.stringify(d.map(function(g){return g.items})))}
  return d}
 function saveFoods(){wr('pa-foods',JSON.stringify(foods.map(function(g){return g.items})))}
 var PINS={'Making a snack':'Snack','Riding in the car, 1 hour':'Ride, 1 hour','Seated tai chi, 10 minutes':'Seated tai chi','10-minute walk':'10-minute walk','Shower, get dressed':'Shower','Standing tai chi, 10 minutes':'Standing tai chi','Lymphatic flush, 10 minutes':'Lymphatic flush','Weights, short session':'Weights','Store run, like Menards':'Store run'};
@@ -459,7 +463,13 @@ function act(a,v){
  else if(a==='keepact'){keepAct=!keepAct}
  else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to put the original activities back');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=defaultActs();saveActs();render();toast('Original activities are back','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
- else if(a==='wstep'){var wb=parseFloat(day.weight);if(isNaN(wb)){wb=wLast(false);if(wb===null)wb=wStart()}day.weight=String(Math.max(80,Math.min(600,Math.round((wb+parseFloat(v))*10)/10)));save()}
+ else if(a==='wstep'){var wb=parseFloat(day.weight);if(isNaN(wb)){wb=wLast(false);if(wb===null)wb=wStart();if(wb===null){toast('Type your weight in the box first');return}}day.weight=String(Math.max(80,Math.min(600,Math.round((wb+parseFloat(v))*10)/10)));save()}
+ else if(a==='txtsize'){wr('pa-text',v)}
+ else if(a==='bgcol'){wr('pa-bg',v)}
+ else if(a==='togsnow'){wr('pa-snow',rd('pa-snow')==='0'?'1':'0')}
+ else if(a==='bkdl'){try{var bb=new Blob([backupData()],{type:'application/json'}),au=document.createElement('a');au.href=URL.createObjectURL(bb);au.download='pa-log-backup-'+today+'.json';document.body.appendChild(au);au.click();document.body.removeChild(au);toast('Backup saved to downloads')}catch(e){toast('Could not download. Try Copy backup')}return}
+ else if(a==='bkcopy'){var bt=backupData();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(bt).then(function(){toast('Backup copied. Paste it into a note or message to keep it')},function(){toast('Could not copy')})}else toast('Could not copy');return}
+ else if(a==='bkrestore'){var bp=(document.getElementById('bkpaste')||{}).value||'';var rn=restoreData(bp);if(rn<0){toast('That is not a backup from this app');return}toast('Restored '+rn+' items. Reloading');setTimeout(function(){location.reload()},900);return}
  else if(a==='secmv'){var sp2=v.split('|');wr('pa-sorder',JSON.stringify(moveIn(secOrder(),sp2[0],parseInt(sp2[1],10))))}
  else if(a==='grpmv'){var gp2=v.split('|');wr('pa-gorder',JSON.stringify(moveIn(grpOrder(),gp2[0],parseInt(gp2[1],10))))}
  else if(a==='ordreset'){wr('pa-sorder','[]');wr('pa-gorder','[]')}
@@ -563,7 +573,7 @@ function dashHtml(){
 function render(){
  var tot=total(),sp=spent(),lf=left();
  var h='';
- h+='<header><div class="snow"><i style="--x:33%;--s:5px;--d:7.2s;--l:-3.0s"></i><i style="--x:80%;--s:4px;--d:7.5s;--l:-0.5s"></i><i style="--x:4%;--s:4px;--d:6.0s;--l:-1.9s"></i><i style="--x:94%;--s:4px;--d:7.2s;--l:-4.4s"></i><i style="--x:53%;--s:5px;--d:8.4s;--l:-1.9s"></i><i style="--x:22%;--s:5px;--d:6.6s;--l:-0.1s"></i><i style="--x:11%;--s:3px;--d:8.0s;--l:-4.7s"></i><i style="--x:41%;--s:3px;--d:8.3s;--l:-2.2s"></i><i style="--x:79%;--s:5px;--d:8.7s;--l:-3.1s"></i><i style="--x:57%;--s:4px;--d:7.9s;--l:-4.6s"></i><i style="--x:20%;--s:4px;--d:5.4s;--l:-1.1s"></i><i style="--x:30%;--s:4px;--d:8.9s;--l:-3.5s"></i><i style="--x:83%;--s:4px;--d:6.7s;--l:-6.7s"></i><i style="--x:76%;--s:4px;--d:7.1s;--l:-3.3s"></i></div><h1>🎄 Pa\'s Christmas Energy Log</h1></header><div class="cane"></div>';
+ h+='<header><div class="snow"><i style="--x:33%;--s:5px;--d:7.2s;--l:-3.0s"></i><i style="--x:80%;--s:4px;--d:7.5s;--l:-0.5s"></i><i style="--x:4%;--s:4px;--d:6.0s;--l:-1.9s"></i><i style="--x:94%;--s:4px;--d:7.2s;--l:-4.4s"></i><i style="--x:53%;--s:5px;--d:8.4s;--l:-1.9s"></i><i style="--x:22%;--s:5px;--d:6.6s;--l:-0.1s"></i><i style="--x:11%;--s:3px;--d:8.0s;--l:-4.7s"></i><i style="--x:41%;--s:3px;--d:8.3s;--l:-2.2s"></i><i style="--x:79%;--s:5px;--d:8.7s;--l:-3.1s"></i><i style="--x:57%;--s:4px;--d:7.9s;--l:-4.6s"></i><i style="--x:20%;--s:4px;--d:5.4s;--l:-1.1s"></i><i style="--x:30%;--s:4px;--d:8.9s;--l:-3.5s"></i><i style="--x:83%;--s:4px;--d:6.7s;--l:-6.7s"></i><i style="--x:76%;--s:4px;--d:7.1s;--l:-3.3s"></i></div><h1>'+(rd('pa-title')&&rd('pa-title').trim()?esc(rd('pa-title').trim()):'\uD83C\uDF84 Pa\'s Christmas Energy Log')+'</h1></header><div class="cane"></div>';
  h+='<div class="datebar"><button data-a="prev" aria-label="Previous day">‹</button><div class="dt">'+esc(pretty(date))+'</div><button data-a="next" aria-label="Next day">›</button>'+(date!==today?'<button class="todaybtn" data-a="today">Today</button>':'')+'</div>';
  /* coin bar */
  h+='<div class="bar"><div class="top">'+['R','Y','G'].map(function(c){return '<button class="cbtn c'+c+(day.color===c?' on':'')+'" data-a="color" data-v="'+c+'"><i class="dot"></i>'+CN[c]+'<span>'+cfg[c]+' coins</span></button>'}).join('')+'</div>';
@@ -685,6 +695,13 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  h+='<div class="row"><span style="flex:1;font-weight:700">Calories: '+(showCal?'showing':'hidden')+'</span><button class="small" data-a="togcal">'+(showCal?'Hide them':'Show them')+'</button></div>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Daily calorie target: '+getTarget()+'</span><button class="small" data-a="tgt" data-v="-100">\u2212 100</button><button class="small" data-a="tgt" data-v="100">+ 100</button></div>';
  h+='<div class="hint">2300 is a gentle starting point for slow weight loss, worked out from 68 years old, 6 ft 2, 250 lb and medium activity. It is an estimate, not a prescription. Change it to whatever the doctor or dietitian says.</div>';
+ h+='</details><details class="sub2"><summary>Look and feel</summary>';
+ var txs=parseInt(rd('pa-text'),10)||0,cbg=rd('pa-bg')||'green';
+ h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Text size</div><div class="row">'+['Normal','Large','Extra large'].map(function(n,ix){return '<button class="chip'+(txs===ix?' on':'')+'" data-a="txtsize" data-v="'+ix+'">'+n+'</button>'}).join('')+'</div>';
+ h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Background color</div><div class="row">'+Object.keys(BGS).map(function(k){return '<button class="chip'+(cbg===k?' on':'')+'" data-a="bgcol" data-v="'+k+'" style="--k:'+BGS[k][0]+'">'+BGS[k][2]+'</button>'}).join('')+'</div>';
+ h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Name at the top</div><div class="row"><input type="text" data-ed="title" value="'+esc(rd('pa-title')||'')+'" placeholder="\uD83C\uDF84 Pa\'s Christmas Energy Log" aria-label="Name at the top"></div><div class="hint">Leave it empty for the original name.</div>';
+ h+='<div class="row"><span style="flex:1;font-weight:700">Falling snow: '+(rd('pa-snow')==='0'?'off':'on')+'</span><button class="small" data-a="togsnow">'+(rd('pa-snow')==='0'?'Turn on':'Turn off')+'</button></div>';
+ h+='</details><details class="sub2"><summary>Back up or move to a new phone</summary><div class="hint">Everything is saved only on this phone. If the phone is replaced or the browser data is cleared, it is gone. A backup keeps a copy.</div><div class="row"><button class="small" data-a="bkdl">Download backup</button><button class="small" data-a="bkcopy">Copy backup</button></div><div class="hint">To restore on a phone: choose the backup file, or paste the copied text and tap Restore.</div><div class="row"><input type="file" id="bkfile" accept=".json,application/json,text/plain"></div><div class="row"><input type="text" id="bkpaste" placeholder="paste backup text here"><button class="small del" data-a="bkrestore">Restore</button></div>';
  h+='</details><details class="sub2"><summary>Order of sections</summary><div class="hint">Move the things Pa uses most to the top. Tap the arrows. Nothing is deleted.</div><div class="tier" style="--k:#5a4a3a;--kt:#fff">Sections on the page</div>';
  var so=secOrder();so.forEach(function(k,ix){var nm=SECN.filter(function(x){return x[0]===k})[0][1];h+='<div class="row"><span style="flex:1;font-weight:700">'+nm+'</span><button class="small" data-a="secmv" data-v="'+k+'|-1" aria-label="Move '+nm+' up"'+(ix===0?' disabled':'')+'>\u25B2</button><button class="small" data-a="secmv" data-v="'+k+'|1" aria-label="Move '+nm+' down"'+(ix===so.length-1?' disabled':'')+'>\u25BC</button></div>'});
  h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Food groups</div>';
@@ -727,7 +744,7 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  app.className=day.color||'';
  var sy=window.pageYOffset;
  var openIdx=[];var ds2=document.querySelectorAll('details');for(var di=0;di<ds2.length;di++){if(ds2[di].open)openIdx.push(di)}
- app.innerHTML=h;applySecOrder();
+ app.innerHTML=h;applySecOrder();applyLook();
  var nd=document.querySelectorAll('details');openIdx.forEach(function(ix){if(nd[ix])nd[ix].open=true});
  window.scrollTo(0,sy);applyFilters();
  if(popG){var gl=document.querySelectorAll('[data-g="'+popG+'"]');for(var gi=0;gi<gl.length;gi++){var el=gl[gi];if(el.classList.contains('on')||el.classList.contains('lv')){el.classList.add('pop');el.style.animationDelay=(parseInt(el.getAttribute('data-i'),10)*30)+'ms'}}}
@@ -755,39 +772,48 @@ function applySecOrder(){
  var ref=mv[mv.length-1].nextSibling,o=secOrder();
  o.forEach(function(k){var n=mv.filter(function(m){return m.getAttribute('data-sec')===k})[0];if(n)app2.insertBefore(n,ref)})}
 function wnum(k){var v=parseFloat(rd(k));return (v>=80&&v<=600)?v:null}
-function wStart(){var v=wnum('pa-wstart');return v===null?250:v}
+function wStart(){return wnum('pa-wstart')}
 function wTarget(){return wnum('pa-wtarget')}
 function wLast(before){var i,o,w;for(i=before?1:0;i<400;i++){o=load(addDays(today,-i));w=parseFloat(o.weight);if(!isNaN(w))return w}return null}
 function wPoints(){var pts=[],i,o,w;for(i=120;i>=0;i--){var d=addDays(today,-i);o=load(d);w=parseFloat(o.weight);if(!isNaN(w))pts.push([d,w])}return pts}
 function wDay(d){var p=d.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getTime()/86400000}
 function weightCard(){
- var tgt=wTarget(),st=wStart(),pts=wPoints(),now=pts.length?pts[pts.length-1][1]:null,cur=now===null?st:now;
+ var tgt=wTarget(),st=wStart(),pts=wPoints(),now=pts.length?pts[pts.length-1][1]:null;if(st===null&&pts.length)st=pts[0][1];var cur=now===null?st:now;
  var h='<div class="card" data-sec="weight" style="--ac:#2b7fb0"><h2>\u2696\uFE0F Weight<small>Weigh in whenever you like. Saved on this day.</small></h2>';
  var tv=day.weight;
  h+='<div class="row wrow"><button class="small" data-a="wstep" data-v="-1">\u2212 1</button><button class="small" data-a="wstep" data-v="-0.2">\u2212 0.2</button><span class="wval">'+(tv===''?'\u2014':esc(tv)+' lb')+'</span><button class="small" data-a="wstep" data-v="0.2">+ 0.2</button><button class="small" data-a="wstep" data-v="1">+ 1</button>'+(tv!==''?'<button class="small" data-a="clearH" data-v="weight" aria-label="Clear weight">\u2715</button>':'')+'</div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Or type it</span><input type="text" inputmode="decimal" id="wnow" data-ed="wnow" placeholder="like 248.6" value="'+esc(tv)+'" aria-label="Type today\'s weight"></div>';
- var left=tgt===null?null:cur-tgt,down=st-cur;
- h+='<div class="tg wtg"><div class="t1"><i>\uD83C\uDFC1</i><b>'+fmt1(st)+'</b><small>Start</small></div><div class="t2"><i>\uD83D\uDCCD</i><b>'+fmt1(cur)+'</b><small>Now</small></div><div class="t3"><i>\uD83C\uDFAF</i><b>'+(tgt===null?'\u2013':fmt1(tgt))+'</b><small>Target</small></div></div>';
- h+='<div class="cmsg">'+(now===null?'No weigh-ins yet. The line starts with the first one.':(down>0?'\u2B07\uFE0F Down '+fmt1(down)+' lb since the start':(down<0?'\u2B06\uFE0F Up '+fmt1(-down)+' lb since the start':'Same as the start'))+(left!==null?(left>0?' \u00B7 '+fmt1(left)+' lb to go':' \u00B7 target reached \uD83C\uDF89'):''))+'</div>';
+ var left=(tgt===null||cur===null)?null:cur-tgt,down=(st===null||cur===null)?0:st-cur;
+ h+='<div class="tg wtg"><div class="t1"><i>\uD83C\uDFC1</i><b>'+(st===null?'\u2013':fmt1(st))+'</b><small>Start</small></div><div class="t2"><i>\uD83D\uDCCD</i><b>'+(cur===null?'\u2013':fmt1(cur))+'</b><small>Now</small></div><div class="t3"><i>\uD83C\uDFAF</i><b>'+(tgt===null?'\u2013':fmt1(tgt))+'</b><small>Target</small></div></div>';
+ h+='<div class="cmsg">'+(now===null?'No weigh-ins yet. The first one becomes the start.':(down>0?'\u2B07\uFE0F Down '+fmt1(down)+' lb since the start':(down<0?'\u2B06\uFE0F Up '+fmt1(-down)+' lb since the start':'Same as the start'))+(left!==null?(left>0?' \u00B7 '+fmt1(left)+' lb to go':' \u00B7 target reached \uD83C\uDF89'):''))+'</div>';
  /* chart */
- var W=340,H=170,L=34,R=10,T=14,B=26,all=pts.map(function(x){return x[1]}).concat([st]);if(tgt!==null)all.push(tgt);
+ var W=340,H=170,L=34,R=10,T=14,B=26,all=pts.map(function(x){return x[1]});if(st!==null)all.push(st);if(tgt!==null)all.push(tgt);var showChart=all.length>0;if(!showChart)all=[200,250];
  var mn=Math.floor(Math.min.apply(null,all)-2),mx=Math.ceil(Math.max.apply(null,all)+2);
  var x0=Math.min(pts.length?wDay(pts[0][0]):wDay(today),wDay(today)-13),x1=wDay(today);
  function X(d){return L+(wDay(d)-x0)/(x1-x0||1)*(W-L-R)}function Y(v){return T+(mx-v)/(mx-mn||1)*(H-T-B)}
- h+='<svg viewBox="0 0 '+W+' '+H+'" class="wchart" role="img" aria-label="Weight over time">';
- h+='<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="#b9a98f" stroke-width="2"/>';
+ if(showChart)h+='<svg viewBox="0 0 '+W+' '+H+'" class="wchart" role="img" aria-label="Weight over time">';
+ var sv0=h;h+='<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="#b9a98f" stroke-width="2"/>';
  h+='<text x="'+(L-4)+'" y="'+(T+4)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">'+mx+'</text><text x="'+(L-4)+'" y="'+(H-B)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">'+mn+'</text>';
  if(tgt!==null)h+='<line x1="'+L+'" y1="'+Y(tgt)+'" x2="'+(W-R)+'" y2="'+Y(tgt)+'" stroke="#5a4a3a" stroke-width="2" stroke-dasharray="6 4"/><text x="'+(W-R)+'" y="'+(Y(tgt)-4)+'" text-anchor="end" font-size="11" font-weight="800" fill="#4a3d30">Target '+fmt1(tgt)+'</text>';
- h+='<line x1="'+L+'" y1="'+Y(st)+'" x2="'+(W-R)+'" y2="'+Y(st)+'" stroke="#d9a82b" stroke-width="1.5" stroke-dasharray="2 4"/>';
+ if(st!==null)h+='<line x1="'+L+'" y1="'+Y(st)+'" x2="'+(W-R)+'" y2="'+Y(st)+'" stroke="#d9a82b" stroke-width="1.5" stroke-dasharray="2 4"/>';
  if(pts.length>1)h+='<polyline fill="none" stroke="#2e7d4f" stroke-width="3" stroke-linejoin="round" points="'+pts.map(function(q){return X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)}).join(' ')+'"/>';
  pts.forEach(function(q,ix){var last=ix===pts.length-1;h+='<circle cx="'+X(q[0]).toFixed(1)+'" cy="'+Y(q[1]).toFixed(1)+'" r="'+(last?6:4)+'" fill="'+(last?'#c0392b':'#2e7d4f')+'" stroke="#fff" stroke-width="2"/>'});
  if(pts.length){var lp=pts[pts.length-1];h+='<text x="'+Math.min(X(lp[0]),W-R-14).toFixed(1)+'" y="'+(Y(lp[1])-10).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#2b2420">'+fmt1(lp[1])+'</text>'}
  function sd(d){var p=d.split('-');return (+p[1])+'/'+(+p[2])}
- h+='<text x="'+L+'" y="'+(H-8)+'" font-size="11" font-weight="700" fill="#4a3d30">'+sd(addDays(today,-(x1-x0)))+'</text><text x="'+(W-R)+'" y="'+(H-8)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">Today</text></svg>';
- h+='<div class="hint">Dashed gold line is the starting weight.</div>';
- h+='<div class="row"><span class="lbl" style="width:auto">Start weight</span><input type="text" inputmode="decimal" data-ed="wstart" value="'+fmt1(st)+'" aria-label="Start weight"></div>';
+ h+='<text x="'+L+'" y="'+(H-8)+'" font-size="11" font-weight="700" fill="#4a3d30">'+sd(addDays(today,-(x1-x0)))+'</text><text x="'+(W-R)+'" y="'+(H-8)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">Today</text></svg>';if(!showChart)h=sv0;
+ if(showChart&&st!==null)h+='<div class="hint">Dotted gold line is the starting weight.</div>';
+ h+='<div class="row"><span class="lbl" style="width:auto">Start weight</span><input type="text" inputmode="decimal" data-ed="wstart" value="'+(wStart()===null?'':fmt1(wStart()))+'" placeholder="first weigh-in" aria-label="Start weight"></div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Target weight</span><input type="text" inputmode="decimal" data-ed="wtarget" value="'+(tgt===null?'':fmt1(tgt))+'" placeholder="set a target" aria-label="Target weight"></div>';
  return h+'</div>'}
+var BGS={green:['#12452a','#0f3d22','Green'],red:['#6b1d1d','#5a1818','Red'],navy:['#14304f','#102640','Navy'],brown:['#3b2a22','#2f221b','Brown']};
+function applyLook(){
+ var tx=parseInt(rd('pa-text'),10),px=[16,18,20][tx>=0&&tx<=2?tx:0],bg=BGS[rd('pa-bg')]||BGS.green;
+ document.documentElement.style.fontSize=px+'px';document.body.style.background=bg[0];
+ var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',bg[1]);
+ var tt=(rd('pa-title')||'').trim();document.title=tt||"Pa's Christmas Energy Log";
+ var sn=document.querySelector('.snow');if(sn)sn.style.display=rd('pa-snow')==='0'?'none':''}
+function backupData(){var o={app:'pa-log',saved:new Date().toISOString(),data:{}},i,k;try{for(i=0;i<localStorage.length;i++){k=localStorage.key(i);if(k.indexOf('pa-')===0)o.data[k]=localStorage.getItem(k)}}catch(e){}for(k in mem){if(k.indexOf('pa-')===0&&!(k in o.data))o.data[k]=mem[k]}return JSON.stringify(o)}
+function restoreData(txt){var o;try{o=JSON.parse(txt)}catch(e){return -1}if(!o||o.app!=='pa-log'||!o.data)return -1;var n=0,k;for(k in o.data){if(k.indexOf('pa-')===0&&typeof o.data[k]==='string'){wr(k,o.data[k]);n++}}return n}
 function applyFilters(){
  var fc=document.getElementById('foodcard');
  if(fc){var q=fq.trim().toLowerCase(),any=false;fc.classList.toggle('fsearching',!!q);
@@ -808,6 +834,7 @@ document.addEventListener('input',function(ev){
  else if(id==='atime'){addTime=ev.target.value}
 });
 document.addEventListener('change',function(ev){
+ if(ev.target&&ev.target.id==='bkfile'){var f=ev.target.files&&ev.target.files[0];if(f){var fr=new FileReader();fr.onload=function(){var rn=restoreData(String(fr.result));if(rn<0){toast('That is not a backup from this app')}else{toast('Restored '+rn+' items. Reloading');setTimeout(function(){location.reload()},900)}};fr.readAsText(f)}return}
  var t=ev.target,ed=t.getAttribute?t.getAttribute('data-ed'):null;if(!ed)return;
  var g=parseInt(t.getAttribute('data-g'),10),i=parseInt(t.getAttribute('data-i'),10);
  if(ed==='fname'){
@@ -834,6 +861,7 @@ document.addEventListener('change',function(ev){
   var to=parseInt(t.value,10);
   if(foods[g]&&foods[to]&&to!==g){var it=foods[g].items.splice(i,1)[0];foods[to].items.push(it);saveFoods();render();toast('Moved to '+foods[to].n)}
  }else if(ed==='wnow'||ed==='wstart'||ed==='wtarget'){var wv=parseFloat(String(t.value).replace(',','.'));if(ed==='wnow'){if(isNaN(wv))day.weight='';else if(wv>=80&&wv<=600)day.weight=String(Math.round(wv*10)/10);else toast('Weight should be between 80 and 600');save()}else if(wv>=80&&wv<=600){wr(ed==='wstart'?'pa-wstart':'pa-wtarget',String(wv))}else if(ed==='wtarget'&&String(t.value).trim()===''){wr('pa-wtarget','')}else toast('Weight should be between 80 and 600');render();
+ }else if(ed==='title'){wr('pa-title',t.value.trim());render();
  }else if(ed==='aname'){
   var an=t.value.trim().replace(/\|/g,'/');if(an&&acts[i]){acts[i][0]=an;acts[i][3]='';saveActs()}render();
  }else if(ed==='acost'){
