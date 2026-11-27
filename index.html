@@ -151,6 +151,12 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .cbars .tl span{position:absolute;right:0;top:-1.3em;font-size:.75rem;font-weight:800;background:#fffaf0;padding:0 3px;color:#4a3d30}
 .clab{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-size:.8rem;font-weight:800;color:#4a3d30}
 .clab span small{display:block;font-weight:700}
+.sbox{border:2px solid #e6dcc6;border-radius:12px;padding:6px 8px;margin:6px 0;background:#fff}
+.sbox .sh{font-weight:900;color:#a52a1d;font-size:1.05rem}
+.vb2{display:flex;gap:3px;align-items:flex-end}
+.vb2 .vb{width:15px}
+.vn2{display:flex;flex-direction:column;line-height:1.2}
+.vn2 b{font-size:.85rem;font-weight:800}
 .dsum{list-style:none;margin-top:4px}
 .dsum li{padding:8px 2px;border-top:1px solid #eadfc9;font-size:1rem}
 .dsum li.nudge{background:#e1eedf;border-radius:10px;padding:10px;font-weight:700;margin-top:6px;border-top:0}
@@ -332,7 +338,7 @@ function summaryOf(o,d){
 }
 function detailsOf(o,d){
  var L=[];
- var sl=[];if(o.sleepH!=='')sl.push(o.sleepH+' hours');if(o.sleepQ)sl.push(o.sleepQ);if(o.nap!=='')sl.push('nap '+o.nap+' h');
+ var sl=[];if(o.sleepH!=='')sl.push('night '+o.sleepH+' hours');if(o.sleepQ)sl.push(o.sleepQ);if(o.nap!=='')sl.push('nap '+o.nap+' h');
  if(sl.length)L.push('Sleep: '+sl.join(', '));
  if(o.eyes&&o.eyes.length)L.push('Eyes: '+o.eyes.join(', '));
  if(o.pain!==null&&o.pain!==undefined){L.push('Pain: '+o.pain+'/10'+(o.painWhere?' · where: '+o.painWhere:'')+(o.painWhen?' · when: '+o.painWhen:''))}
@@ -449,10 +455,10 @@ function dayData(d){
  var o=load(d),ev=[],sp=0;
  ['Morning','Afternoon','Evening'].forEach(function(p){if(o.energy&&o.energy[p])ev.push(o.energy[p])});
  o.log.forEach(function(e){if(e.k==='did')sp+=e.c||0});
- var sl=parseFloat(o.sleepH);if(isNaN(sl))sl=null;
- return {d:d,o:o,sp:sp,tot:o.color?cfg[o.color]:0,sl:sl,
+ var sl=parseFloat(o.sleepH);if(isNaN(sl))sl=null;var np=parseFloat(o.nap);if(isNaN(np))np=null;
+ return {d:d,o:o,sp:sp,tot:o.color?cfg[o.color]:0,sl:sl,np:np,
   avg:ev.length?ev.reduce(function(a,b){return a+b},0)/ev.length:null,
-  has:!!(o.color||o.log.length||ev.length||(o.pain!==null&&o.pain!==undefined)||sl!==null||o.crash)};
+  has:!!(o.color||o.log.length||ev.length||(o.pain!==null&&o.pain!==undefined)||sl!==null||np!==null||o.crash)};
 }
 function dashHtml(){
  var days=[],i;for(i=6;i>=0;i--)days.push(dayData(addDays(today,-i)));
@@ -475,9 +481,10 @@ function dashHtml(){
   if(p===null||p===undefined)return '<span class="pc none">–</span>';
   return '<span class="pc" style="'+cs(PAIN[p])+'">'+p+'</span>';
  });
- h+=row('Sleep','',function(x){
-  if(x.sl===null)return '<span class="vb none"></span><span class="nv">–</span>';
-  return '<span class="vb"><i style="height:'+Math.max(8,Math.min(x.sl,10)/10*100)+'%;background:#2b7fb0"></i></span><span class="nv">'+fmt1(x.sl)+' h</span>';
+ h+=row('Sleep: night and nap (blue is night, orange is nap)','',function(x){
+  if(x.sl===null&&x.np===null)return '<span class="vb2"><span class="vb none"></span><span class="vb none"></span></span><span class="nv">\u2013</span>';
+  function bar(v,c){return v===null?'<span class="vb none"></span>':'<span class="vb"><i style="height:'+(v>0?Math.max(8,Math.min(v,10)/10*100):0)+'%;background:'+c+'"></i></span>'}
+  return '<span class="vb2">'+bar(x.sl,'#2b7fb0')+bar(x.np,'#d9822b')+'</span><span class="vn2"><b style="color:#1f5f87">'+(x.sl===null?'\u2013':fmt1(x.sl))+'</b><b style="color:#b3611a">'+(x.np===null?'\u2013':fmt1(x.np))+'</b></span>';
  });
  if(showFood&&showCal){
   var tg2=getTarget(),cv=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}),mx=Math.max(tg2*1.25,Math.max.apply(null,cv));
@@ -503,7 +510,10 @@ function dashHtml(){
  if(cnt.R+cnt.Y+cnt.G)L.push('Green days: <b>'+cnt.G+'</b> · Yellow: <b>'+cnt.Y+'</b> · Red: <b>'+cnt.R+'</b>');
  if(crashes)L.push('Crashes this week: <b>'+crashes+'</b>');else if(noc)L.push('No crashes this week 🎄');
  if(ens.length)L.push('Average energy: <b>'+fmt1(mean(ens))+' of 5</b>');
- if(sls.length)L.push('Average sleep: <b>'+fmt1(mean(sls))+' hours</b>');
+ if(sls.length)L.push('Average night sleep: <b>'+fmt1(mean(sls))+' hours</b>');
+ var nps=days.filter(function(x){return x.np!==null&&x.np>0}).map(function(x){return x.np});
+ if(nps.length)L.push('Naps: <b>'+nps.length+' of 7 days</b> \u00B7 average <b>'+fmt1(mean(nps))+' hours</b> on those days');
+ if(sls.length&&nps.length){var tots=days.filter(function(x){return x.sl!==null}).map(function(x){return x.sl+(x.np||0)});L.push('Average night plus nap: <b>'+fmt1(mean(tots))+' hours</b> a day')}
  if(showFood&&showCal){var cls=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}).filter(function(v){return v>0});if(cls.length){var av=Math.round(mean(cls)),t3=getTarget();L.push('Average calories on days with food logged: <b>'+av+'</b> (rough guess)');L.push('Days at or under the '+t3+' target: <b>'+cls.filter(function(v){return v<=t3}).length+' of '+cls.length+'</b> \u00B7 average is '+Math.abs(av-t3)+(av<=t3?' under':' over')+' the target')}}
  if(streak>0)L.push('Days in a row with no crash: <b>'+streak+'</b>');
  h+='<ul class="dsum">'+L.map(function(t){return '<li>'+t+'</li>'}).join('');
@@ -528,9 +538,9 @@ function render(){
  h+='</div>';
  /* check-in */
  h+='<div class="card" style="--ac:#c0392b"><h2>How are you?</h2>';
- h+='<div class="row"><span class="lbl">Sleep</span>'+stepper('sleepH','hours')+'</div>';
+ h+='<div class="sbox"><div class="sh">Sleep</div><div class="row"><span class="lbl">Night</span>'+stepper('sleepH','hours')+'</div>';
  h+='<div class="row"><span class="lbl"></span>'+chips(['Poor','OK','Good'],day.sleepQ,'sleepQ',SLEEPQ,true,'sleepQ')+'</div>';
- h+='<div class="row"><span class="lbl">Nap</span>'+stepper('nap','hours')+'</div>';
+ h+='<div class="row"><span class="lbl">Nap</span>'+stepper('nap','hours')+'</div></div>';
  h+='<div class="row"><span class="lbl">Eyes</span>'+chips(EYES,day.eyes,'eye',EYEC,false,null)+'</div>';
  h+='<div class="row" style="margin-bottom:2px"><span class="lbl" style="width:100%;display:flex;justify-content:space-between"><span>Pain (0 = none, 10 = worst)</span><span class="rd">'+((day.pain===null||day.pain===undefined)?'':day.pain+' of 10')+'</span></span></div><div class="g6">'+[0,1,2,3,4,5,6,7,8,9,10].map(function(n){var cl=((day.pain!==null&&day.pain!==undefined&&n<day.pain)?' lv':'')+(day.pain===n?' on':'');return '<button class="num'+cl+'" style="'+cs(PAIN[n])+'" data-g="pain" data-i="'+n+'" data-a="pain" data-v="'+n+'">'+n+'</button>'}).join('')+'</div>';
  h+='<div class="row"><span class="lbl">Where</span><input type="text" id="pw" placeholder="jaw, ear, head…" value="'+esc(day.painWhere)+'"></div>';
