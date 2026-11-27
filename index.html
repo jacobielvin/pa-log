@@ -174,6 +174,11 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .fsearching .fgb.shut{display:grid}
 .srch{font-size:1rem;height:44px;border-radius:12px;border:2px solid #b9a98f;padding:0 10px;background:#fff;min-width:0;flex:1}
 [hidden]{display:none!important}
+.wrow{align-items:center;justify-content:space-between;gap:4px}
+.wrow{flex-wrap:nowrap}.wrow .small{padding:0 7px;min-width:0;flex:none}
+.wval{font-weight:900;font-size:1.1rem;min-width:70px;text-align:center;flex:1}
+.wtg{margin-top:12px}
+.wchart{width:100%;height:auto;display:block;margin-top:6px;background:#fff;border:2px solid #e6dcc6;border-radius:12px}
 .dsum{list-style:none;margin-top:4px}
 .dsum li{padding:8px 2px;border-top:1px solid #eadfc9;font-size:1rem}
 .dsum li.nudge{background:#e1eedf;border-radius:10px;padding:10px;font-weight:700;margin-top:6px;border-top:0}
@@ -329,7 +334,7 @@ function loadActs(){var s=rd('pa-menu'),r=null;try{r=s?JSON.parse(s):null}catch(
  wr('pa-menu',JSON.stringify(a));return a}
 function saveActs(){wr('pa-menu',JSON.stringify(acts))}
 function foodCanon(n){var l=String(n).toLowerCase();for(var g=0;g<foods.length;g++)for(var i=0;i<foods[g].items.length;i++)if(foods[g].items[i].toLowerCase()===l)return foods[g].items[i];return null}
-function blank(){return {color:null,log:[],sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
+function blank(){return {color:null,log:[],weight:'',sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
 function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x);if(/^(Soda|Water)$/.test(e.x)&&/cup/.test(e.un||'')&&typeof e.q==='number'){e.q=Math.round(e.q*8*100)/100;e.un='oz'}});return b}catch(e){return blank()}}
 function save(){wr('pa-log-'+date,JSON.stringify(day))}
 
@@ -364,6 +369,7 @@ function detailsOf(o,d){
  var L=[];
  var sl=[];if(o.sleepH!=='')sl.push('night '+o.sleepH+' hours');if(o.sleepQ)sl.push(o.sleepQ);if(o.nap!=='')sl.push('nap '+o.nap+' h');
  if(sl.length)L.push('Sleep: '+sl.join(', '));
+ if(o.weight!==''&&o.weight!==undefined&&!isNaN(parseFloat(o.weight)))L.push('Weight: '+o.weight+' lb');
  if(o.eyes&&o.eyes.length)L.push('Eyes: '+o.eyes.join(', '));
  if(o.pain!==null&&o.pain!==undefined){L.push('Pain: '+o.pain+'/10'+(o.painWhere?' · where: '+o.painWhere:'')+(o.painWhen?' · when: '+o.painWhen:''))}
  var en=[];['Morning','Afternoon','Evening'].forEach(function(p){if(o.energy&&o.energy[p])en.push(p+' '+o.energy[p])});
@@ -453,6 +459,7 @@ function act(a,v){
  else if(a==='keepact'){keepAct=!keepAct}
  else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to put the original activities back');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=defaultActs();saveActs();render();toast('Original activities are back','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
+ else if(a==='wstep'){var wb=parseFloat(day.weight);if(isNaN(wb)){wb=wLast(false);if(wb===null)wb=wStart()}day.weight=String(Math.max(80,Math.min(600,Math.round((wb+parseFloat(v))*10)/10)));save()}
  else if(a==='secmv'){var sp2=v.split('|');wr('pa-sorder',JSON.stringify(moveIn(secOrder(),sp2[0],parseInt(sp2[1],10))))}
  else if(a==='grpmv'){var gp2=v.split('|');wr('pa-gorder',JSON.stringify(moveIn(grpOrder(),gp2[0],parseInt(gp2[1],10))))}
  else if(a==='ordreset'){wr('pa-sorder','[]');wr('pa-gorder','[]')}
@@ -484,9 +491,9 @@ function dayData(d){
  ['Morning','Afternoon','Evening'].forEach(function(p){if(o.energy&&o.energy[p])ev.push(o.energy[p])});
  o.log.forEach(function(e){if(e.k==='did')sp+=e.c||0});
  var sl=parseFloat(o.sleepH);if(isNaN(sl))sl=null;var np=parseFloat(o.nap);if(isNaN(np))np=null;
- return {d:d,o:o,sp:sp,tot:o.color?cfg[o.color]:0,sl:sl,np:np,
+ return {d:d,o:o,sp:sp,tot:o.color?cfg[o.color]:0,sl:sl,np:np,wt:(function(){var w=parseFloat(o.weight);return isNaN(w)?null:w})(),
   avg:ev.length?ev.reduce(function(a,b){return a+b},0)/ev.length:null,
-  has:!!(o.color||o.log.length||ev.length||(o.pain!==null&&o.pain!==undefined)||sl!==null||np!==null||o.crash)};
+  has:!!(o.color||o.log.length||ev.length||(o.pain!==null&&o.pain!==undefined)||sl!==null||np!==null||o.crash||(o.weight!==''&&o.weight!==undefined))};
 }
 function dashHtml(){
  var days=[],i;for(i=6;i>=0;i--)days.push(dayData(addDays(today,-i)));
@@ -509,6 +516,7 @@ function dashHtml(){
   if(p===null||p===undefined)return '<span class="pc none">–</span>';
   return '<span class="pc" style="'+cs(PAIN[p])+'">'+p+'</span>';
  });
+ if(days.some(function(x){return x.wt!==null})){h+=row('Weight (pounds)','',function(x){return '<span class="nv">'+(x.wt===null?'\u2013':fmt1(x.wt))+'</span>'})}
  h+=row('Sleep: night and nap (blue is night, orange is nap)','',function(x){
   if(x.sl===null&&x.np===null)return '<span class="vb2"><span class="vb none"></span><span class="vb none"></span></span><span class="nv">\u2013</span>';
   function bar(v,c){return v===null?'<span class="vb none"></span>':'<span class="vb"><i style="height:'+(v>0?Math.max(8,Math.min(v,10)/10*100):0)+'%;background:'+c+'"></i></span>'}
@@ -538,6 +546,7 @@ function dashHtml(){
  if(cnt.R+cnt.Y+cnt.G)L.push('Green days: <b>'+cnt.G+'</b> · Yellow: <b>'+cnt.Y+'</b> · Red: <b>'+cnt.R+'</b>');
  if(crashes)L.push('Crashes this week: <b>'+crashes+'</b>');else if(noc)L.push('No crashes this week 🎄');
  if(ens.length)L.push('Average energy: <b>'+fmt1(mean(ens))+' of 5</b>');
+ var wts=days.filter(function(x){return x.wt!==null});if(wts.length>1){var wd=wts[wts.length-1].wt-wts[0].wt;L.push('Weight this week: <b>'+(wd<0?'down '+fmt1(-wd):(wd>0?'up '+fmt1(wd):'no change'))+(wd?' lb':'')+'</b>')}
  if(sls.length)L.push('Average night sleep: <b>'+fmt1(mean(sls))+' hours</b>');
  var nps=days.filter(function(x){return x.np!==null&&x.np>0}).map(function(x){return x.np});
  if(nps.length)L.push('Naps: <b>'+nps.length+' of 7 days</b> \u00B7 average <b>'+fmt1(mean(nps))+' hours</b> on those days');
@@ -575,6 +584,7 @@ function render(){
  h+='<div class="row"><span class="lbl">Where</span><input type="text" id="pw" placeholder="jaw, ear, head…" value="'+esc(day.painWhere)+'"></div>';
  h+='<div class="row"><span class="lbl">When</span><input type="text" id="pwn" placeholder="morning, after walking…" value="'+esc(day.painWhen)+'"></div>';
  h+='</div>';
+ h+=weightCard();
  /* activities: only what the plan allows */
  h+='<div class="card" data-sec="did" style="--ac:#f0c24d"><h2>I did something<small>Only what fits your coins left</small></h2>';
  function actBtn(a,cls){return '<button class="'+cls+'" data-nm="'+esc(a[0].toLowerCase())+'" style="'+ts(a[1])+'" data-a="did" data-v="'+esc(a[0]+'|'+a[1])+'"><span>'+esc(cls==='q'&&a[3]?a[3]:a[0])+'</span><b>'+a[1]+'</b></button>'}
@@ -733,7 +743,7 @@ document.addEventListener('click',function(ev){
  var g=b.getAttribute('data-g');popG=g||null;popA=g?null:a;popV=b.getAttribute('data-v');curN=b.getAttribute('data-n')||'';
  act(a,b.getAttribute('data-v'));
 });
-var SECN=[['checkin','How are you?'],['did','I did something'],['ate','I ate something'],['today','Today so far'],['energy','Energy'],['end','End of the day'],['week','My week'],['past','Past days'],['coins','Coin numbers']];
+var SECN=[['checkin','How are you?'],['weight','Weight'],['did','I did something'],['ate','I ate something'],['today','Today so far'],['energy','Energy'],['end','End of the day'],['week','My week'],['past','Past days'],['coins','Coin numbers']];
 function jget(k,d){try{var v=JSON.parse(rd(k)||'null');return Array.isArray(v)?v:d}catch(e){return d}}
 function secOrder(){var sv=jget('pa-sorder',[]),keys=SECN.map(function(x){return x[0]}),o=sv.filter(function(k){return keys.indexOf(k)>-1});keys.forEach(function(k){if(o.indexOf(k)<0)o.push(k)});return o}
 function grpOrder(){var sv=jget('pa-gorder',[]),names=foods.map(function(g){return g.n}),o=sv.filter(function(n){return names.indexOf(n)>-1});names.forEach(function(n){if(o.indexOf(n)<0)o.push(n)});return o}
@@ -744,6 +754,40 @@ function applySecOrder(){
  if(mv.length<2)return;
  var ref=mv[mv.length-1].nextSibling,o=secOrder();
  o.forEach(function(k){var n=mv.filter(function(m){return m.getAttribute('data-sec')===k})[0];if(n)app2.insertBefore(n,ref)})}
+function wnum(k){var v=parseFloat(rd(k));return (v>=80&&v<=600)?v:null}
+function wStart(){var v=wnum('pa-wstart');return v===null?250:v}
+function wTarget(){return wnum('pa-wtarget')}
+function wLast(before){var i,o,w;for(i=before?1:0;i<400;i++){o=load(addDays(today,-i));w=parseFloat(o.weight);if(!isNaN(w))return w}return null}
+function wPoints(){var pts=[],i,o,w;for(i=120;i>=0;i--){var d=addDays(today,-i);o=load(d);w=parseFloat(o.weight);if(!isNaN(w))pts.push([d,w])}return pts}
+function wDay(d){var p=d.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getTime()/86400000}
+function weightCard(){
+ var tgt=wTarget(),st=wStart(),pts=wPoints(),now=pts.length?pts[pts.length-1][1]:null,cur=now===null?st:now;
+ var h='<div class="card" data-sec="weight" style="--ac:#2b7fb0"><h2>\u2696\uFE0F Weight<small>Weigh in whenever you like. Saved on this day.</small></h2>';
+ var tv=day.weight;
+ h+='<div class="row wrow"><button class="small" data-a="wstep" data-v="-1">\u2212 1</button><button class="small" data-a="wstep" data-v="-0.2">\u2212 0.2</button><span class="wval">'+(tv===''?'\u2014':esc(tv)+' lb')+'</span><button class="small" data-a="wstep" data-v="0.2">+ 0.2</button><button class="small" data-a="wstep" data-v="1">+ 1</button>'+(tv!==''?'<button class="small" data-a="clearH" data-v="weight" aria-label="Clear weight">\u2715</button>':'')+'</div>';
+ h+='<div class="row"><span class="lbl" style="width:auto">Or type it</span><input type="text" inputmode="decimal" id="wnow" data-ed="wnow" placeholder="like 248.6" value="'+esc(tv)+'" aria-label="Type today\'s weight"></div>';
+ var left=tgt===null?null:cur-tgt,down=st-cur;
+ h+='<div class="tg wtg"><div class="t1"><i>\uD83C\uDFC1</i><b>'+fmt1(st)+'</b><small>Start</small></div><div class="t2"><i>\uD83D\uDCCD</i><b>'+fmt1(cur)+'</b><small>Now</small></div><div class="t3"><i>\uD83C\uDFAF</i><b>'+(tgt===null?'\u2013':fmt1(tgt))+'</b><small>Target</small></div></div>';
+ h+='<div class="cmsg">'+(now===null?'No weigh-ins yet. The line starts with the first one.':(down>0?'\u2B07\uFE0F Down '+fmt1(down)+' lb since the start':(down<0?'\u2B06\uFE0F Up '+fmt1(-down)+' lb since the start':'Same as the start'))+(left!==null?(left>0?' \u00B7 '+fmt1(left)+' lb to go':' \u00B7 target reached \uD83C\uDF89'):''))+'</div>';
+ /* chart */
+ var W=340,H=170,L=34,R=10,T=14,B=26,all=pts.map(function(x){return x[1]}).concat([st]);if(tgt!==null)all.push(tgt);
+ var mn=Math.floor(Math.min.apply(null,all)-2),mx=Math.ceil(Math.max.apply(null,all)+2);
+ var x0=Math.min(pts.length?wDay(pts[0][0]):wDay(today),wDay(today)-13),x1=wDay(today);
+ function X(d){return L+(wDay(d)-x0)/(x1-x0||1)*(W-L-R)}function Y(v){return T+(mx-v)/(mx-mn||1)*(H-T-B)}
+ h+='<svg viewBox="0 0 '+W+' '+H+'" class="wchart" role="img" aria-label="Weight over time">';
+ h+='<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="#b9a98f" stroke-width="2"/>';
+ h+='<text x="'+(L-4)+'" y="'+(T+4)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">'+mx+'</text><text x="'+(L-4)+'" y="'+(H-B)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">'+mn+'</text>';
+ if(tgt!==null)h+='<line x1="'+L+'" y1="'+Y(tgt)+'" x2="'+(W-R)+'" y2="'+Y(tgt)+'" stroke="#5a4a3a" stroke-width="2" stroke-dasharray="6 4"/><text x="'+(W-R)+'" y="'+(Y(tgt)-4)+'" text-anchor="end" font-size="11" font-weight="800" fill="#4a3d30">Target '+fmt1(tgt)+'</text>';
+ h+='<line x1="'+L+'" y1="'+Y(st)+'" x2="'+(W-R)+'" y2="'+Y(st)+'" stroke="#d9a82b" stroke-width="1.5" stroke-dasharray="2 4"/>';
+ if(pts.length>1)h+='<polyline fill="none" stroke="#2e7d4f" stroke-width="3" stroke-linejoin="round" points="'+pts.map(function(q){return X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)}).join(' ')+'"/>';
+ pts.forEach(function(q,ix){var last=ix===pts.length-1;h+='<circle cx="'+X(q[0]).toFixed(1)+'" cy="'+Y(q[1]).toFixed(1)+'" r="'+(last?6:4)+'" fill="'+(last?'#c0392b':'#2e7d4f')+'" stroke="#fff" stroke-width="2"/>'});
+ if(pts.length){var lp=pts[pts.length-1];h+='<text x="'+Math.min(X(lp[0]),W-R-14).toFixed(1)+'" y="'+(Y(lp[1])-10).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="800" fill="#2b2420">'+fmt1(lp[1])+'</text>'}
+ function sd(d){var p=d.split('-');return (+p[1])+'/'+(+p[2])}
+ h+='<text x="'+L+'" y="'+(H-8)+'" font-size="11" font-weight="700" fill="#4a3d30">'+sd(addDays(today,-(x1-x0)))+'</text><text x="'+(W-R)+'" y="'+(H-8)+'" text-anchor="end" font-size="11" font-weight="700" fill="#4a3d30">Today</text></svg>';
+ h+='<div class="hint">Dashed gold line is the starting weight.</div>';
+ h+='<div class="row"><span class="lbl" style="width:auto">Start weight</span><input type="text" inputmode="decimal" data-ed="wstart" value="'+fmt1(st)+'" aria-label="Start weight"></div>';
+ h+='<div class="row"><span class="lbl" style="width:auto">Target weight</span><input type="text" inputmode="decimal" data-ed="wtarget" value="'+(tgt===null?'':fmt1(tgt))+'" placeholder="set a target" aria-label="Target weight"></div>';
+ return h+'</div>'}
 function applyFilters(){
  var fc=document.getElementById('foodcard');
  if(fc){var q=fq.trim().toLowerCase(),any=false;fc.classList.toggle('fsearching',!!q);
@@ -789,6 +833,7 @@ document.addEventListener('change',function(ev){
  }else if(ed==='fgrp'){
   var to=parseInt(t.value,10);
   if(foods[g]&&foods[to]&&to!==g){var it=foods[g].items.splice(i,1)[0];foods[to].items.push(it);saveFoods();render();toast('Moved to '+foods[to].n)}
+ }else if(ed==='wnow'||ed==='wstart'||ed==='wtarget'){var wv=parseFloat(String(t.value).replace(',','.'));if(ed==='wnow'){if(isNaN(wv))day.weight='';else if(wv>=80&&wv<=600)day.weight=String(Math.round(wv*10)/10);else toast('Weight should be between 80 and 600');save()}else if(wv>=80&&wv<=600){wr(ed==='wstart'?'pa-wstart':'pa-wtarget',String(wv))}else if(ed==='wtarget'&&String(t.value).trim()===''){wr('pa-wtarget','')}else toast('Weight should be between 80 and 600');render();
  }else if(ed==='aname'){
   var an=t.value.trim().replace(/\|/g,'/');if(an&&acts[i]){acts[i][0]=an;acts[i][3]='';saveActs()}render();
  }else if(ed==='acost'){
