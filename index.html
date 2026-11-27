@@ -328,6 +328,7 @@ function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-
 var today=ds(new Date());
 var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',fq='',fclosed=(function(){try{var c=JSON.parse(rd('pa-fclosed')||'{}');return c&&typeof c==='object'?c:{}}catch(e){return {}}})(),aq='',showCal=rd('pa-showcal')!=='0',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null,curN='';
 /* once: sodas moved from cups to ounces, so drop any older cup settings saved for them */
+if(rd('pa-banana1')!=='1'){delete ustep['Banana'];saveSteps();wr('pa-banana1','1')}
 if(rd('pa-soda1')!=='1'){['Pepsi','Coke','H-E-B Cola','Soda','Water'].forEach(function(n){delete uunit[n];delete ustep[n];delete ucal[n]});saveUnits();saveSteps();saveCal();wr('pa-soda1','1')}
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
