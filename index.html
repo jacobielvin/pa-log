@@ -102,6 +102,8 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .fb .fn0{padding-left:10px}
 .fb .fn span{overflow-wrap:break-word}
 .qgrid.foodgrid{grid-template-columns:minmax(0,1fr)}
+.fb .fp2{flex:none;width:auto;min-width:58px;padding:0 6px;border-left:2px solid var(--k);font-weight:900;font-size:1rem;color:var(--k);display:flex;align-items:center;justify-content:center;background:transparent;border-top:0;border-right:0;border-bottom:0;cursor:pointer}
+.fb .fp2:active{background:rgba(0,0,0,.1)}
 .fb .ft{flex:none;display:flex;align-items:center;padding:0 4px}
 .fb .ft i{background:var(--k);color:var(--kt);border-radius:10px;padding:4px 10px;font-style:normal;font-weight:800;font-size:.95rem;line-height:1.1;white-space:nowrap}
 .fb .fn small{font-weight:600;font-size:.8rem;color:#4a3d30}
@@ -160,7 +162,7 @@ var MENU=[
 ];
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
-var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)','Water']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
+var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey']],['Drinks','#2b7fb0','#dcecf5',['Soda','2% milk','Hot cocoa (Keurig)','Water']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
 /* How each food is measured, like the Food Tracker: one unit per food, and one tap adds one step of it.
    t = cup, oz, tbsp, tsp (or count for whole items like eggs). st = how much one tap adds. c = rough calories in ONE unit.
    d = what one old single tap meant (only used for days logged before amounts existed). s = where the number came from. All editable in Make it yours. */
@@ -179,9 +181,7 @@ var ITEMS={
  'Banana':{t:'count',u:'banana',p:'bananas',st:0.5,c:105,d:1,s:'1 medium, typical value'},
  'Strawberries':{t:'cup',st:0.5,c:50,d:1,s:'typical value'},
  'Celery':{t:'count',u:'stalk',p:'stalks',st:1,c:10,d:1,s:'typical value'},
- 'Pepsi':{t:'oz',st:20,c:12.5,d:12,s:'150 per 12 oz can, so 12.5 per oz. A 20 oz bottle is 250, a 16.9 oz bottle is about 211'},
- 'Coke':{t:'oz',st:20,c:11.7,d:12,s:'140 per 12 oz can, so about 11.7 per oz. A 20 oz bottle is about 233, a 16.9 oz bottle is about 197'},
- 'H-E-B Cola':{t:'oz',st:20,c:14.2,d:12,s:'170 per 12 oz can, so about 14.2 per oz. A 20 oz bottle is about 283, a 16.9 oz bottle is about 239. The cane sugar pack says 180 per can'},
+ 'Soda':{t:'oz',st:20,sts:[16.9,20],c:12.5,d:12,s:'about 12.5 per oz, so a 16.9 oz bottle is about 211 and a 20 oz bottle is 250. Pepsi, Coke and store cola are all close to that'},
  '2% milk':{t:'cup',st:0.5,c:120,d:1,s:'typical value'},
  'Hot cocoa (Keurig)':{t:'cup',st:0.5,c:80,d:1,s:'a guess, depends on the brand'},
  'Salad':{t:'cup',st:0.5,c:20,d:1,s:'mixed greens, about 15 to 20 per cup. Dressing is not included'},
@@ -193,7 +193,7 @@ var ITEMS={
  'Butter':{t:'tbsp',st:1,c:100,d:2,s:'about 100 per tablespoon'},
  'Honey':{t:'tsp',st:1,c:21,d:1,s:'about 21 per teaspoon'},
  'Cookie':{t:'count',u:'cookie',p:'cookies',st:1,c:150,d:1,s:'1 medium cookie, typical value. Varies a lot by size'},
- 'Water':{t:'cup',st:1,c:0,d:2.5,s:'no calories. A 20 oz bottle is 2\u00BD cups'},
+ 'Water':{t:'oz',st:20,sts:[16.9,20],c:0,d:20,s:'no calories'},
  'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',st:1,c:53,d:1,s:'Central Market label, 210 per 4 truffles'}
 };
 APPLES.forEach(function(n){ITEMS[n]={t:'count',u:'apple',p:'apples',st:0.5,c:95,d:1,s:'1 medium apple (about 3 inches across). Varieties differ by roughly 10 calories, so this is a typical value'}});
@@ -219,7 +219,7 @@ function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
 /* food buttons and own activities: saved on this phone; bad data falls back to the originals */
 /* calories are now saved per unit (per oz, per cup...). Older saves were per tap, so they are converted once. */
-var RENAME={'cheese, 1 oz':'Cheese','bread, slice':'Bread','butter, 1 oz':'Butter','water, 20 oz':'Water','bannana':'Banana','mash potatoes':'Mashed potatoes'};
+var RENAME={'cheese, 1 oz':'Cheese','bread, slice':'Bread','butter, 1 oz':'Butter','water, 20 oz':'Water','bannana':'Banana','mash potatoes':'Mashed potatoes','pepsi':'Soda','coke':'Soda','h-e-b cola':'Soda','heb cola':'Soda'};
 function fixName(n){var r=RENAME[String(n).trim().toLowerCase()];return r||String(n).trim()}
 function inferBase(n){var l=String(n).toLowerCase();
  if(/\bslices?\b/.test(l))return {t:'count',u:'slice',p:'slices',c:null,d:1};
@@ -242,10 +242,10 @@ function loadSteps(){var r=rd('pa-steps'),q;try{q=r?JSON.parse(r):{}}catch(e){q=
  var o={};for(var k in q){if(typeof q[k]==='number'&&q[k]>0&&q[k]<=10)o[k]=q[k]}return o}
 function saveSteps(){wr('pa-steps',JSON.stringify(ustep))}
 function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:inferBase(n);
- var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,st:b.st||DSTEP[b.t],s:b.s||''};
+ var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,st:b.st||DSTEP[b.t],sts:b.sts||null,s:b.s||''};
  var ov=Object.prototype.hasOwnProperty.call(uunit,n)?uunit[n]:null;
- if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.st=DSTEP[ov];r.c=null;r.d=1;r.s=''}
- if(Object.prototype.hasOwnProperty.call(ustep,n))r.st=ustep[n];
+ if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.st=DSTEP[ov];r.sts=null;r.c=null;r.d=1;r.s=''}
+ if(Object.prototype.hasOwnProperty.call(ustep,n)){r.st=ustep[n];r.sts=null}
  return r}
 function stepOpts(n){var u=unitOf(n),l=STEPS.slice();if(u.t==='oz')l=l.concat([12,16.9,20]);if(l.indexOf(u.st)<0)l.push(u.st);return l.sort(function(a,b){return a-b})}
 function unitChoices(n){var k=itemKey(n),b=k?ITEMS[k]:inferBase(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons'],['tsp','teaspoons']];
@@ -276,15 +276,15 @@ function loadActs(){var s=rd('pa-acts');try{s=s?JSON.parse(s):[]}catch(e){s=[]}
 function saveActs(){wr('pa-acts',JSON.stringify(acts))}
 function foodCanon(n){var l=String(n).toLowerCase();for(var g=0;g<foods.length;g++)for(var i=0;i<foods[g].items.length;i++)if(foods[g].items[i].toLowerCase()===l)return foods[g].items[i];return null}
 function blank(){return {color:null,log:[],sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
-function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x);if(/^(Pepsi|Coke|H-E-B Cola)$/.test(e.x)&&/cup/.test(e.un||'')&&typeof e.q==='number'){e.q=Math.round(e.q*8*100)/100;e.un='oz'}});return b}catch(e){return blank()}}
+function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x);if(/^(Soda|Water)$/.test(e.x)&&/cup/.test(e.un||'')&&typeof e.q==='number'){e.q=Math.round(e.q*8*100)/100;e.un='oz'}});return b}catch(e){return blank()}}
 function save(){wr('pa-log-'+date,JSON.stringify(day))}
 
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null;
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null,curN='';
 /* once: sodas moved from cups to ounces, so drop any older cup settings saved for them */
-if(rd('pa-soda1')!=='1'){['Pepsi','Coke','H-E-B Cola'].forEach(function(n){delete uunit[n];delete ustep[n];delete ucal[n]});saveUnits();saveSteps();saveCal();wr('pa-soda1','1')}
+if(rd('pa-soda1')!=='1'){['Pepsi','Coke','H-E-B Cola','Soda','Water'].forEach(function(n){delete uunit[n];delete ustep[n];delete ucal[n]});saveUnits();saveSteps();saveCal();wr('pa-soda1','1')}
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
 function period(t){var h=parseInt(t.split(':')[0],10);return h<12?'Morning':(h<17?'Afternoon':'Evening')}
@@ -358,6 +358,7 @@ function act(a,v){
  else if(a==='energy'){var q=v.split('|');var cur=day.energy[q[0]];day.energy[q[0]]=(cur===parseInt(q[1],10)?null:parseInt(q[1],10));save()}
  else if(a==='crash'){day.crash=(day.crash===v?null:v);save()}
  else if(a==='size'){pickSize=(pickSize===v?'':v)}
+ else if(a==='fsize'){var sz=parseFloat(v);if(curN&&sz>0){day.log.push({k:'ate',t:(date===today)?nowT():(addTime||'12:00'),x:curN,q:sz,un:'oz'});save()}render();return}
  else if(a==='fplus'){var pn=v,pst=unitOf(pn).st,lastE=null;
   for(var z=day.log.length-1;z>=0;z--){if(day.log[z].k==='ate'&&day.log[z].x===pn){lastE=day.log[z];break}}
   var agoM=lastE?(function(){var pp=(lastE.lt||lastE.t).split(':'),nw=new Date();return nw.getHours()*60+nw.getMinutes()-(+pp[0]*60+ +pp[1])})():999;
@@ -374,8 +375,8 @@ function act(a,v){
  }
  else if(a==='foodminus'){var mi=-1;for(var q2=day.log.length-1;q2>=0;q2--){if(day.log[q2].k==='ate'&&day.log[q2].x===v){mi=q2;break}}
   if(mi>=0){undoX={t:'log',d:date,v:JSON.parse(JSON.stringify(day.log))};var me=day.log[mi],mst=unitOf(v).st;
-   if(me.q!==undefined&&me.q!==null&&me.q-mst>0.001){me.q=Math.round((me.q-mst)*100)/100;me.un=unitWord(me.q,v)}else day.log.splice(mi,1)}
-  save();render();toast('Took off: '+fmtQ(unitOf(v).st,v)+' '+v,'undox');return}
+   if(!unitOf(v).sts&&me.q!==undefined&&me.q!==null&&me.q-mst>0.001){me.q=Math.round((me.q-mst)*100)/100;me.un=unitWord(me.q,v)}else day.log.splice(mi,1)}
+  save();render();toast('Took off: '+v,'undox');return}
  else if(a==='keepfood'){var kn=((document.getElementById('atext')||{}).value||'').trim();if(!kn){toast('Type what you ate');return}
   var kg=parseInt((document.getElementById('keepgrp')||{}).value,10)||0;var ex=foodCanon(kn);
   if(ex){toast('That one already has a button. Tap its + above.');return}
@@ -540,12 +541,13 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
    var u=unitOf(n),tot=0,has=false;
    day.log.forEach(function(e){if(e.k==='ate'&&e.x===n){has=true;tot+=(e.q!==undefined&&e.q!==null)?e.q:u.d}});
    var cal=showCal?calOf(n):null;
-   var sub='+'+fmtQ(u.st,n)+((cal!==null&&cal!==undefined)?' \u00B7 '+Math.round(cal*u.st)+' cal':'');
+   var sub=u.sts?('tap a bottle size'+((cal!==null&&cal!==undefined&&cal>0)?' \u00B7 '+u.sts.map(function(z){return Math.round(cal*z)}).join(' or ')+' cal':'')):'+'+fmtQ(u.st,n)+((cal!==null&&cal!==undefined)?' \u00B7 '+Math.round(cal*u.st)+' cal':'');
    return '<div class="fb" style="'+gst+'">'
     +(has?'<button class="fm" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take '+esc(fmtQ(u.st,n))+' of '+esc(n)+' off">\u2212</button>':'')
-    +'<button class="fn'+(has?'':' fn0')+'" data-a="fplus" data-v="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+esc(sub)+'</small></button>'
+    +'<button class="fn'+(has?'':' fn0')+'" data-a="'+(u.sts?'noop':'fplus')+'" data-v="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+esc(sub)+'</small></button>'
     +(has?'<button class="ft" data-a="fplus" data-v="'+esc(n)+'" aria-label="Total so far"><i>'+esc(fmtQ(Math.round(tot*100)/100,n))+'</i></button>':'')
-    +'<button class="fp" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'"><em>+</em></button></div>';
+    +(u.sts?u.sts.map(function(sz){return '<button class="fp2" data-a="fsize" data-v="'+sz+'" data-n="'+esc(n)+'" aria-label="Add '+sz+' oz of '+esc(n)+'">+'+sz+'</button>'}).join('')+'</div>'
+     :'<button class="fp" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'"><em>+</em></button></div>');
   }).join('')+'</div>';
  });
   if(showCal){var lc=logCal(day.log);h+='<div class="hint" style="margin-top:8px">'+(lc.t?'About <b>'+lc.t+'</b> calories so far today (rough guess).':'No calories counted yet.')+(lc.miss?' '+lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number.':'')+'</div>'}
@@ -605,7 +607,7 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
     +'<button class="small" data-a="fup" data-v="'+gi+'|'+ii+'" aria-label="Move up">↑</button><button class="small" data-a="fdn" data-v="'+gi+'|'+ii+'" aria-label="Move down">↓</button>'
     +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div>'
     +'<div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" data-ed="funit" data-g="'+gi+'" data-i="'+ii+'" aria-label="Measured in">'+unitChoices(n).map(function(t){return '<option value="'+t[0]+'"'+(unitOf(n).t===t[0]?' selected':'')+'>'+t[1]+'</option>'}).join('')+'</select></div>'
-    +'<div class="row"><span class="lbl" style="width:auto">Each tap adds</span><select class="pick" data-ed="fstep" data-g="'+gi+'" data-i="'+ii+'" aria-label="Each tap adds">'+stepOpts(n).map(function(sv){return '<option value="'+sv+'"'+(unitOf(n).st===sv?' selected':'')+'>'+frac(sv)+' '+(sv>1?unitOf(n).p:unitOf(n).u)+'</option>'}).join('')+'</select></div>'
+    +(unitOf(n).sts?'<div class="hint">Buttons add a '+unitOf(n).sts.join(' oz or ')+' oz bottle.</div>':'<div class="row"><span class="lbl" style="width:auto">Each tap adds</span><select class="pick" data-ed="fstep" data-g="'+gi+'" data-i="'+ii+'" aria-label="Each tap adds">'+stepOpts(n).map(function(sv){return '<option value="'+sv+'"'+(unitOf(n).st===sv?' selected':'')+'>'+frac(sv)+' '+(sv>1?unitOf(n).p:unitOf(n).u)+'</option>'}).join('')+'</select></div>')
     +'<div class="row"><span class="lbl" style="width:auto">Calories per '+esc(unitOf(n).u)+'</span><input type="text" inputmode="numeric" class="calin" data-ed="fcal" data-g="'+gi+'" data-i="'+ii+'" value="'+(calOf(n)===null||calOf(n)===undefined?'':Math.round(calOf(n)))+'" placeholder="none" aria-label="Calories per unit"></div>'
     +((unitOf(n).s&&!Object.prototype.hasOwnProperty.call(ucal,n))?'<div class="hint">Source: '+esc(unitOf(n).s)+'.</div>':'')+'</div>';
   });
@@ -640,7 +642,7 @@ document.addEventListener('click',function(ev){
  var b=ev.target.closest?ev.target.closest('[data-a]'):null;
  if(!b)return;
  var a=b.getAttribute('data-a');
- var g=b.getAttribute('data-g');popG=g||null;popA=g?null:a;popV=b.getAttribute('data-v');
+ var g=b.getAttribute('data-g');popG=g||null;popA=g?null:a;popV=b.getAttribute('data-v');curN=b.getAttribute('data-n')||'';
  act(a,b.getAttribute('data-v'));
 });
 document.addEventListener('input',function(ev){
