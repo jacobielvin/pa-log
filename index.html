@@ -276,13 +276,15 @@ function loadActs(){var s=rd('pa-acts');try{s=s?JSON.parse(s):[]}catch(e){s=[]}
 function saveActs(){wr('pa-acts',JSON.stringify(acts))}
 function foodCanon(n){var l=String(n).toLowerCase();for(var g=0;g<foods.length;g++)for(var i=0;i<foods[g].items.length;i++)if(foods[g].items[i].toLowerCase()===l)return foods[g].items[i];return null}
 function blank(){return {color:null,log:[],sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
-function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x)});return b}catch(e){return blank()}}
+function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x);if(/^(Pepsi|Coke|H-E-B Cola)$/.test(e.x)&&/cup/.test(e.un||'')&&typeof e.q==='number'){e.q=Math.round(e.q*8*100)/100;e.un='oz'}});return b}catch(e){return blank()}}
 function save(){wr('pa-log-'+date,JSON.stringify(day))}
 
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
 var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null;
+/* once: sodas moved from cups to ounces, so drop any older cup settings saved for them */
+if(rd('pa-soda1')!=='1'){['Pepsi','Coke','H-E-B Cola'].forEach(function(n){delete uunit[n];delete ustep[n];delete ucal[n]});saveUnits();saveSteps();saveCal();wr('pa-soda1','1')}
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
 function period(t){var h=parseInt(t.split(':')[0],10);return h<12?'Morning':(h<17?'Afternoon':'Evening')}
