@@ -163,8 +163,8 @@ var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk'
 var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
 /* How each food is measured. t = cup, oz, tbsp or count. c = rough calories in ONE unit. d = the amount one old single tap meant (used for days logged before amounts existed).
    o = amounts shown as buttons (leave out to use the standard set for that unit). s = where the number came from. Editable in Make it yours. */
-var NOUN={cup:['cup','cups'],oz:['oz','oz'],tbsp:['tbsp','tbsp'],count:['piece','pieces']};
-var TLBL={cup:'cups',oz:'ounces',tbsp:'tablespoons',count:'whole pieces (like eggs or apples)'};
+var NOUN={cup:['cup','cups'],oz:['oz','oz'],tbsp:['tbsp','tbsp'],count:['each','each']};
+var TLBL={cup:'cups',oz:'ounces',tbsp:'tablespoons',count:'each'};
 var PRE={cup:[0.25,0.5,0.75,1,1.5,2],oz:[0.5,1,2,3,4],tbsp:[1,2,3,4],count:[1,2,3,4]};
 var APPLES=['Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)'];
 var ITEMS={
@@ -182,7 +182,7 @@ var ITEMS={
  'H-E-B Cola':{t:'cup',c:113.3,d:1.5,tag:{1.5:'1 can'},s:'12 oz can = 170, so about 113 per cup. The cane sugar pack says 180 per can'},
  '2% milk':{t:'cup',c:120,d:1,s:'typical value'},
  'Hot cocoa (Keurig)':{t:'cup',c:80,d:1,s:'a guess, depends on the brand'},
- 'Truffle chocolates':{t:'count',u:'piece',p:'pieces',c:53,d:1,o:[1,2,3,4],s:'Central Market label, 210 per 4 pieces'}
+ 'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',c:53,d:1,o:[1,2,3,4],s:'Central Market label, 210 per 4 truffles'}
 };
 APPLES.forEach(function(n){ITEMS[n]={t:'count',u:'apple',p:'apples',c:95,d:1,o:[0.5,1,2],s:'1 medium apple (about 3 inches across). Varieties differ by roughly 10 calories, so this is a typical value'}});
 var SIZES=['bites','handful','bowl','plate'];
@@ -217,11 +217,13 @@ function loadUnits(){var r=rd('pa-units'),q;try{q=r?JSON.parse(r):{}}catch(e){q=
  if(!q||typeof q!=='object'||Array.isArray(q))return {};
  var o={};for(var k in q){if(typeof q[k]==='string'&&TLBL[q[k]])o[k]=q[k]}return o}
 function saveUnits(){wr('pa-units',JSON.stringify(uunit))}
-function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:{t:'count',u:'piece',p:'pieces',c:null,d:1};
+function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:{t:'cup',c:null,d:1};
  var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,o:b.o||PRE[b.t],tag:b.tag||{},s:b.s||''};
  var ov=Object.prototype.hasOwnProperty.call(uunit,n)?uunit[n]:null;
  if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.o=PRE[ov];r.tag={};r.c=null;r.d=1;r.s=''}
  return r}
+function unitChoices(n){var k=itemKey(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons']];
+ if(k&&ITEMS[k].t==='count')l.push(['count',ITEMS[k].p]);return l}
 function calOf(n){if(Object.prototype.hasOwnProperty.call(ucal,n))return ucal[n];var c=unitOf(n).c;return c===undefined?null:c}
 function frac(n){var w=Math.floor(n+1e-9),r=n-w,m={'0.25':'¼','0.5':'½','0.75':'¾'},s='';
  for(var k in m){if(Math.abs(r-parseFloat(k))<0.01)s=m[k]}
@@ -356,7 +358,7 @@ function act(a,v){
   day.log.push(ke);save();render();toast('Added, and kept as a button: '+kn);return}
  else if(a==='addfood'){var an=((document.getElementById('newfood')||{}).value||'').trim();if(!an){toast('Type the name first');return}
   if(foodCanon(an)){toast('That button is already there');return}
-  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();var au=(document.getElementById('newunit')||{}).value;if(TLBL[au]){uunit[an]=au;saveUnits()}render();toast('Button added: '+an);return}
+  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();var au=(document.getElementById('newunit')||{}).value;if(au==='cup'||au==='oz'||au==='tbsp'){uunit[an]=au;saveUnits()}render();toast('Button added: '+an);return}
  else if(a==='fdel'){var fp=v.split('|'),fg=+fp[0],fi=+fp[1],fn=foods[fg].items[fi];foods[fg].items.splice(fi,1);saveFoods();undoX={t:'food',g:fg,i:fi,v:fn};render();toast('Removed button: '+fn,'undox');return}
  else if(a==='fup'||a==='fdn'){var mp=v.split('|'),mg=+mp[0],mi=+mp[1],mj=(a==='fup')?mi-1:mi+1,arr=foods[mg].items;if(mj>=0&&mj<arr.length){var tmp=arr[mi];arr[mi]=arr[mj];arr[mj]=tmp;saveFoods()}}
  else if(a==='addact'){var nn=((document.getElementById('newact')||{}).value||'').trim().replace(/\|/g,'/');if(!nn){toast('Type the name first');return}
@@ -585,13 +587,13 @@ function render(){
     +'<div class="row"><select class="pick" data-ed="fgrp" data-g="'+gi+'" data-i="'+ii+'" aria-label="Move to">'+grpOpts(gi)+'</select>'
     +'<button class="small" data-a="fup" data-v="'+gi+'|'+ii+'" aria-label="Move up">↑</button><button class="small" data-a="fdn" data-v="'+gi+'|'+ii+'" aria-label="Move down">↓</button>'
     +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div>'
-    +'<div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" data-ed="funit" data-g="'+gi+'" data-i="'+ii+'" aria-label="Measured in">'+Object.keys(TLBL).map(function(t){return '<option value="'+t+'"'+(unitOf(n).t===t?' selected':'')+'>'+TLBL[t]+'</option>'}).join('')+'</select></div>'
+    +'<div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" data-ed="funit" data-g="'+gi+'" data-i="'+ii+'" aria-label="Measured in">'+unitChoices(n).map(function(t){return '<option value="'+t[0]+'"'+(unitOf(n).t===t[0]?' selected':'')+'>'+t[1]+'</option>'}).join('')+'</select></div>'
     +'<div class="row"><span class="lbl" style="width:auto">Calories per '+esc(unitOf(n).u)+'</span><input type="text" inputmode="numeric" class="calin" data-ed="fcal" data-g="'+gi+'" data-i="'+ii+'" value="'+(calOf(n)===null||calOf(n)===undefined?'':Math.round(calOf(n)))+'" placeholder="none" aria-label="Calories per unit"></div>'
     +((unitOf(n).s&&!Object.prototype.hasOwnProperty.call(ucal,n))?'<div class="hint">Source: '+esc(unitOf(n).s)+'.</div>':'')+'</div>';
   });
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
- h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+Object.keys(TLBL).map(function(t){return '<option value="'+t+'">'+TLBL[t]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div>';
+ h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+unitChoices('').map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div><div class="hint">Cups for things like salad, soup or rice. Ounces for meat or cheese. Tablespoons for dressing or peanut butter.</div>';
  h+='</details><details class="sub2"><summary>My own activities</summary>';
  if(!acts.length)h+='<div class="hint">None yet. Add one below, or use "Keep it as a button" under Something else in the activity box.</div>';
  acts.forEach(function(a,ai){
@@ -648,7 +650,7 @@ document.addEventListener('change',function(ev){
   render();
  }else if(ed==='funit'){
   var un=foods[g]&&foods[g].items[i];
-  if(un!==undefined&&TLBL[t.value]&&unitOf(un).t!==t.value){uunit[un]=t.value;delete ucal[un];saveUnits();saveCal();toast('Now measured in '+TLBL[t.value]+'. Check the calories.')}
+  if(un!==undefined&&TLBL[t.value]&&unitOf(un).t!==t.value){uunit[un]=t.value;delete ucal[un];saveUnits();saveCal();toast('Now measured in '+(unitOf(un).p)+'. Check the calories.')}
   render();
  }else if(ed==='fgrp'){
   var to=parseInt(t.value,10);
