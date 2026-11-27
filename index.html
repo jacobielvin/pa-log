@@ -97,7 +97,10 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .fb .fm{width:42px;flex:none;font-size:1.8rem;font-weight:900;color:var(--k);line-height:1;border-right:2px solid var(--k)}
 .fb .fn{flex:1;min-width:0;text-align:left;padding:4px 6px;font-size:.95rem;font-weight:700;display:flex;flex-direction:column;justify-content:center;line-height:1.15}
 .fb .fn0{padding-left:10px}
-.fb .fn span{overflow-wrap:anywhere}
+.fb .fn span{overflow-wrap:break-word}
+.qgrid.foodgrid{grid-template-columns:minmax(0,1fr)}
+.fb .ft{flex:none;display:flex;align-items:center;padding:0 4px}
+.fb .ft i{background:var(--k);color:var(--kt);border-radius:10px;padding:4px 10px;font-style:normal;font-weight:800;font-size:.95rem;line-height:1.1;white-space:nowrap}
 .fb .fn small{font-weight:600;font-size:.8rem;color:#4a3d30}
 .fb .fp{width:46px;flex:none;display:flex;align-items:center;justify-content:center}
 .fb .fp.tt{width:auto;min-width:62px;padding:0 6px}.fb .fp i{background:var(--k);color:var(--kt);border-radius:10px;padding:3px 8px;font-style:normal;font-weight:800;font-size:.9rem;line-height:1.1;text-align:center}
@@ -154,7 +157,7 @@ var MENU=[
 ];
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
-var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
+var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)','Water']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
 /* How each food is measured, like the Food Tracker: one unit per food, and one tap adds one step of it.
    t = cup, oz, tbsp, tsp (or count for whole items like eggs). st = how much one tap adds. c = rough calories in ONE unit.
    d = what one old single tap meant (only used for days logged before amounts existed). s = where the number came from. All editable in Make it yours. */
@@ -178,6 +181,16 @@ var ITEMS={
  'H-E-B Cola':{t:'cup',st:0.5,c:113.3,d:1.5,s:'12 oz can = 170, so about 113 per cup. A can is 1\u00BD cups. The cane sugar pack says 180 per can'},
  '2% milk':{t:'cup',st:0.5,c:120,d:1,s:'typical value'},
  'Hot cocoa (Keurig)':{t:'cup',st:0.5,c:80,d:1,s:'a guess, depends on the brand'},
+ 'Salad':{t:'cup',st:0.5,c:20,d:1,s:'mixed greens, about 15 to 20 per cup. Dressing is not included'},
+ 'Biscuits':{t:'count',u:'biscuit',p:'biscuits',st:1,c:210,d:1,s:'1 medium biscuit, typical value. Varies a lot by recipe'},
+ 'Mashed potatoes':{t:'cup',st:0.5,c:240,d:1,s:'made with butter and milk, typical value'},
+ 'Gravy':{t:'cup',st:0.25,c:120,d:0.25,s:'typical value. Depends on the recipe or the brand'},
+ 'Beef roast':{t:'oz',st:1,c:74,d:3,s:'cooked chuck roast, about 74 per oz. A leaner cut is lower'},
+ 'Bread':{t:'count',u:'slice',p:'slices',st:1,c:80,d:1,s:'1 slice of sandwich bread, typical value'},
+ 'Butter':{t:'tbsp',st:1,c:100,d:2,s:'about 100 per tablespoon'},
+ 'Honey':{t:'tsp',st:1,c:21,d:1,s:'about 21 per teaspoon'},
+ 'Cookie':{t:'count',u:'cookie',p:'cookies',st:1,c:150,d:1,s:'1 medium cookie, typical value. Varies a lot by size'},
+ 'Water':{t:'cup',st:1,c:0,d:2.5,s:'no calories. A 20 oz bottle is 2\u00BD cups'},
  'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',st:1,c:53,d:1,s:'Central Market label, 210 per 4 truffles'}
 };
 APPLES.forEach(function(n){ITEMS[n]={t:'count',u:'apple',p:'apples',st:0.5,c:95,d:1,s:'1 medium apple (about 3 inches across). Varieties differ by roughly 10 calories, so this is a typical value'}});
@@ -203,6 +216,14 @@ function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
 /* food buttons and own activities: saved on this phone; bad data falls back to the originals */
 /* calories are now saved per unit (per oz, per cup...). Older saves were per tap, so they are converted once. */
+var RENAME={'cheese, 1 oz':'Cheese','bread, slice':'Bread','butter, 1 oz':'Butter','water, 20 oz':'Water','bannana':'Banana','mash potatoes':'Mashed potatoes'};
+function fixName(n){var r=RENAME[String(n).trim().toLowerCase()];return r||String(n).trim()}
+function inferBase(n){var l=String(n).toLowerCase();
+ if(/\bslices?\b/.test(l))return {t:'count',u:'slice',p:'slices',c:null,d:1};
+ if(/\b(oz|ounces?)\b/.test(l))return {t:'oz',c:null,d:1};
+ if(/\b(tbsp|tablespoons?)\b/.test(l))return {t:'tbsp',c:null,d:1};
+ if(/\b(tsp|teaspoons?)\b/.test(l))return {t:'tsp',c:null,d:1};
+ return {t:'cup',c:null,d:1}}
 function itemKey(n){var l=String(n).toLowerCase();for(var k in ITEMS)if(k.toLowerCase()===l)return k;return null}
 function loadCal(){var r=rd('pa-cal2'),q,mig=false;if(r===null){r=rd('pa-cal');mig=r!==null}
  try{q=r?JSON.parse(r):{}}catch(e){q={}}
@@ -217,14 +238,14 @@ function loadSteps(){var r=rd('pa-steps'),q;try{q=r?JSON.parse(r):{}}catch(e){q=
  if(!q||typeof q!=='object'||Array.isArray(q))return {};
  var o={};for(var k in q){if(typeof q[k]==='number'&&q[k]>0&&q[k]<=10)o[k]=q[k]}return o}
 function saveSteps(){wr('pa-steps',JSON.stringify(ustep))}
-function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:{t:'cup',c:null,d:1};
+function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:inferBase(n);
  var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,st:b.st||DSTEP[b.t],s:b.s||''};
  var ov=Object.prototype.hasOwnProperty.call(uunit,n)?uunit[n]:null;
  if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.st=DSTEP[ov];r.c=null;r.d=1;r.s=''}
  if(Object.prototype.hasOwnProperty.call(ustep,n))r.st=ustep[n];
  return r}
-function unitChoices(n){var k=itemKey(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons'],['tsp','teaspoons']];
- if(k&&ITEMS[k].t==='count')l.push(['count',ITEMS[k].p]);return l}
+function unitChoices(n){var k=itemKey(n),b=k?ITEMS[k]:inferBase(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons'],['tsp','teaspoons']];
+ if(n&&b.t==='count')l.push(['count',b.p||NOUN.count[1]]);return l}
 function calOf(n){if(Object.prototype.hasOwnProperty.call(ucal,n))return ucal[n];var c=unitOf(n).c;return c===undefined?null:c}
 function frac(n){var w=Math.floor(n+1e-9),r=n-w,m={'0.25':'¼','0.5':'½','0.75':'¾'},s='';
  for(var k in m){if(Math.abs(r-parseFloat(k))<0.01)s=m[k]}
@@ -236,9 +257,13 @@ function amtText(e){if(e.q!==undefined&&e.q!==null&&!isNaN(e.q))return frac(e.q)
 function logCal(log){var t=0,miss=0;log.forEach(function(e){if(e.k!=='ate')return;var c=calOf(e.x);if(c===null||c===undefined)miss++;else t+=c*((e.q!==undefined&&e.q!==null)?e.q:unitOf(e.x).d)});return {t:Math.round(t),miss:miss}}
 function defaultFoods(){return FOODS.map(function(g){return {n:g[0],c:g[1],l:g[2],items:g[3].slice()}})}
 function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.parse(s):null}catch(e){s=null}
- if(!Array.isArray(s)||s.length!==3)return d;
- for(var i=0;i<3;i++){if(!Array.isArray(s[i]))return d}
- for(var j=0;j<3;j++)d[j].items=s[j].filter(function(x){return typeof x==='string'&&x.trim()}).map(function(x){return x.trim()});
+ if(!Array.isArray(s)||s.length!==3){wr('pa-foodsv2','1');return d}
+ for(var i=0;i<3;i++){if(!Array.isArray(s[i])){wr('pa-foodsv2','1');return d}}
+ var seen={};
+ for(var j=0;j<3;j++)d[j].items=s[j].filter(function(x){return typeof x==='string'&&x.trim()}).map(fixName).filter(function(x){var l=x.toLowerCase();if(seen[l])return false;seen[l]=1;return true});
+ if(rd('pa-foodsv2')!=='1'){/* once: add the buttons that are new since this list was saved */
+  defaultFoods().forEach(function(g,gi){g.items.forEach(function(x){var l=x.toLowerCase();if(!seen[l]){seen[l]=1;d[gi].items.push(x)}})});
+  wr('pa-foodsv2','1');wr('pa-foods',JSON.stringify(d.map(function(g){return g.items})))}
  return d}
 function saveFoods(){wr('pa-foods',JSON.stringify(foods.map(function(g){return g.items})))}
 function loadActs(){var s=rd('pa-acts');try{s=s?JSON.parse(s):[]}catch(e){s=[]}
@@ -247,7 +272,7 @@ function loadActs(){var s=rd('pa-acts');try{s=s?JSON.parse(s):[]}catch(e){s=[]}
 function saveActs(){wr('pa-acts',JSON.stringify(acts))}
 function foodCanon(n){var l=String(n).toLowerCase();for(var g=0;g<foods.length;g++)for(var i=0;i<foods[g].items.length;i++)if(foods[g].items[i].toLowerCase()===l)return foods[g].items[i];return null}
 function blank(){return {color:null,log:[],sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
-function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];return b}catch(e){return blank()}}
+function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x)});return b}catch(e){return blank()}}
 function save(){wr('pa-log-'+date,JSON.stringify(day))}
 
 /* ---------- state ---------- */
@@ -505,7 +530,7 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
  foods.forEach(function(g){
   if(!g.items.length)return;
   var gst='--k:'+g.c+';--kl:'+g.l+';--kt:#fff';
-  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid">'+g.items.map(function(n){
+  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid foodgrid">'+g.items.map(function(n){
    var u=unitOf(n),tot=0,has=false;
    day.log.forEach(function(e){if(e.k==='ate'&&e.x===n){has=true;tot+=(e.q!==undefined&&e.q!==null)?e.q:u.d}});
    var cal=showCal?calOf(n):null;
@@ -513,7 +538,8 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
    return '<div class="fb" style="'+gst+'">'
     +(has?'<button class="fm" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take '+esc(fmtQ(u.st,n))+' of '+esc(n)+' off">\u2212</button>':'')
     +'<button class="fn'+(has?'':' fn0')+'" data-a="fplus" data-v="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+esc(sub)+'</small></button>'
-    +'<button class="fp'+(has?' tt':'')+'" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'">'+(has?'<i>'+esc(fmtQ(Math.round(tot*100)/100,n))+'</i>':'<em>+</em>')+'</button></div>';
+    +(has?'<button class="ft" data-a="fplus" data-v="'+esc(n)+'" aria-label="Total so far"><i>'+esc(fmtQ(Math.round(tot*100)/100,n))+'</i></button>':'')
+    +'<button class="fp" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'"><em>+</em></button></div>';
   }).join('')+'</div>';
  });
   if(showCal){var lc=logCal(day.log);h+='<div class="hint" style="margin-top:8px">'+(lc.t?'About <b>'+lc.t+'</b> calories so far today (rough guess).':'No calories counted yet.')+(lc.miss?' '+lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number.':'')+'</div>'}
