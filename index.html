@@ -159,6 +159,11 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .vb2 .vb{width:15px}
 .vn2{display:flex;flex-direction:column;line-height:1.2}
 .vn2 b{font-size:.85rem;font-weight:800}
+.tbtn{border:0;cursor:pointer;font-family:inherit;min-height:34px;margin-top:10px}
+.fgb.shut{display:none}
+.fsearching .fgb.shut{display:grid}
+.srch{font-size:1rem;height:44px;border-radius:12px;border:2px solid #b9a98f;padding:0 10px;background:#fff;min-width:0;flex:1}
+[hidden]{display:none!important}
 .dsum{list-style:none;margin-top:4px}
 .dsum li{padding:8px 2px;border-top:1px solid #eadfc9;font-size:1rem}
 .dsum li.nudge{background:#e1eedf;border-radius:10px;padding:10px;font-weight:700;margin-top:6px;border-top:0}
@@ -186,7 +191,7 @@ var MENU=[
 ];
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
-var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey']],['Drinks','#2b7fb0','#dcecf5',['Soda','2% milk','Hot cocoa (Keurig)','Water']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
+var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery','Salad','Biscuits','Mashed potatoes','Gravy','Beef roast','Bread','Butter','Honey']],['Drinks','#2b7fb0','#dcecf5',['Soda','2% milk','Hot cocoa (Keurig)','Water','Michelob Golden Light','Windsor whiskey']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates','Cookie']]];
 /* How each food is measured, like the Food Tracker: one unit per food, and one tap adds one step of it.
    t = cup, oz, tbsp, tsp (or count for whole items like eggs). st = how much one tap adds. c = rough calories in ONE unit.
    d = what one old single tap meant (only used for days logged before amounts existed). s = where the number came from. All editable in Make it yours. */
@@ -217,6 +222,8 @@ var ITEMS={
  'Butter':{t:'tbsp',st:1,c:100,d:2,s:'about 100 per tablespoon'},
  'Honey':{t:'tsp',st:1,c:21,d:1,s:'about 21 per teaspoon'},
  'Cookie':{t:'count',u:'cookie',p:'cookies',st:1,c:150,d:1,s:'1 medium cookie, typical value. Varies a lot by size'},
+ 'Michelob Golden Light':{t:'oz',st:12,sts:[12],c:9.17,d:12,s:'about 110 per 12 oz can. Check the label if it is a different light beer'},
+ 'Windsor whiskey':{t:'oz',st:1,c:64,d:1,s:'80 proof whiskey is about 64 per oz, so a 1.5 oz shot is about 96'},
  'Water':{t:'oz',st:20,sts:[16.9,20],c:0,d:20,s:'no calories'},
  'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',st:1,c:53,d:1,s:'Central Market label, 210 per 4 truffles'}
 };
@@ -295,6 +302,9 @@ function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.pars
  if(rd('pa-foodsv2')!=='1'){/* once: add the buttons that are new since this list was saved */
   defaultFoods().forEach(function(g,gi){g.items.forEach(function(x){var l=x.toLowerCase();if(!seen[l]){seen[l]=1;d[gi].items.push(x)}})});
   wr('pa-foodsv2','1');wr('pa-foods',JSON.stringify(d.map(function(g){return g.items})))}
+ if(rd('pa-foodsv3')!=='1'){/* once: add the drinks that are new in this version */
+  ['Michelob Golden Light','Windsor whiskey'].forEach(function(x){var l=x.toLowerCase();if(!d.some(function(g){return g.items.some(function(y){return y.toLowerCase()===l})}))d[1].items.push(x)});
+  wr('pa-foodsv3','1');wr('pa-foods',JSON.stringify(d.map(function(g){return g.items})))}
  return d}
 function saveFoods(){wr('pa-foods',JSON.stringify(foods.map(function(g){return g.items})))}
 var PINS={'Making a snack':'Snack','Riding in the car, 1 hour':'Ride, 1 hour','Seated tai chi, 10 minutes':'Seated tai chi','10-minute walk':'10-minute walk','Shower, get dressed':'Shower','Standing tai chi, 10 minutes':'Standing tai chi','Lymphatic flush, 10 minutes':'Lymphatic flush','Weights, short session':'Weights','Store run, like Menards':'Store run'};
@@ -316,7 +326,7 @@ function save(){wr('pa-log-'+date,JSON.stringify(day))}
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')!=='0',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null,curN='';
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',fq='',fclosed=(function(){try{var c=JSON.parse(rd('pa-fclosed')||'{}');return c&&typeof c==='object'?c:{}}catch(e){return {}}})(),aq='',showCal=rd('pa-showcal')!=='0',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null,curN='';
 /* once: sodas moved from cups to ounces, so drop any older cup settings saved for them */
 if(rd('pa-soda1')!=='1'){['Pepsi','Coke','H-E-B Cola','Soda','Water'].forEach(function(n){delete uunit[n];delete ustep[n];delete ucal[n]});saveUnits();saveSteps();saveCal();wr('pa-soda1','1')}
 function pad(n){return ('0'+n).slice(-2)}
@@ -432,6 +442,7 @@ function act(a,v){
  else if(a==='keepact'){keepAct=!keepAct}
  else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to put the original activities back');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=defaultActs();saveActs();render();toast('Original activities are back','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
+ else if(a==='fgtog'){if(fclosed[v])delete fclosed[v];else fclosed[v]=1;wr('pa-fclosed',JSON.stringify(fclosed))}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
  else if(a==='tgt'){wr('pa-target',String(Math.max(800,Math.min(4000,getTarget()+parseInt(v,10)))))}
  else if(a==='togcal'){showCal=!showCal;wr('pa-showcal',showCal?'1':'0')}
@@ -449,7 +460,7 @@ function act(a,v){
 /* ---------- render ---------- */
 function chips(list,cur,action,cmap,lvl,grp){var ci=lvl?list.indexOf(cur):-1;return list.map(function(x,i){var on=Array.isArray(cur)?cur.indexOf(x)>=0:cur===x;var c=(lvl&&ci>=0&&i<ci)?' lv':'';var st=cmap?' style="'+cs(cmap[i])+'"':'';return '<button class="chip'+c+(on?' on':'')+'"'+st+' data-a="'+action+'" data-v="'+esc(x)+'"'+(grp?' data-g="'+grp+'" data-i="'+i+'"':'')+'>'+esc(x)+'</button>'}).join('')}
 function stepper(field,unit){var v=day[field];return '<span class="stepper"><button data-a="stepH" data-v="'+field+'|-0.5">−</button><span>'+(v===''?'—':esc(v)+' '+(parseFloat(v)===1?unit.replace(/s$/,''):unit))+'</span><button data-a="stepH" data-v="'+field+'|0.5">+</button>'+(v!==''?'<button data-a="clearH" data-v="'+field+'" title="clear" style="font-size:.8rem">✕</button>':'')+'</span>'}
-function entryHtml(e,idx){var st=e.k==='did'?ts(e.c||0):'--k:#8e2a55;--kt:#fff';return '<div class="entry" style="'+st+'"><span class="t">'+esc(e.t)+'</span><span class="tx">'+(e.k==='ate'?'🍽️ Ate: ':'⭐ ')+esc(e.x)+(e.k==='ate'&&amtText(e)?', '+esc(amtText(e)):'')+'</span>'+(e.k==='did'?'<span class="cc">'+e.c+'</span>':'')+'<button class="rm" data-a="rm" data-v="'+idx+'" aria-label="Remove">✕</button></div>'}
+function entryHtml(e,idx){var st=e.k==='did'?ts(e.c||0):'--k:#8e2a55;--kt:#fff';return '<div class="entry" style="'+st+'"><span class="t">'+esc(e.t)+'</span><span class="tx">'+(e.k==='ate'?'🍽️ ':'⭐ ')+esc(e.x)+(e.k==='ate'&&amtText(e)?' \u00B7 '+esc(amtText(e)):'')+'</span>'+(e.k==='did'?'<span class="cc">'+e.c+'</span>':'')+'<button class="rm" data-a="rm" data-v="'+idx+'" aria-label="Remove">✕</button></div>'}
 /* ---------- week dashboard ---------- */
 var PCOL={R:['#c0392b','#fff'],Y:['#f0c24d','#2b2420'],G:['#2f7d46','#fff']};
 function addDays(s,n){var p=s.split('-');return ds(new Date(+p[0],+p[1]-1,+p[2]+n))}
@@ -552,7 +563,7 @@ function render(){
  h+='</div>';
  /* activities: only what the plan allows */
  h+='<div class="card" style="--ac:#f0c24d"><h2>I did something<small>Only what fits your coins left</small></h2>';
- function actBtn(a,cls){return '<button class="'+cls+'" style="'+ts(a[1])+'" data-a="did" data-v="'+esc(a[0]+'|'+a[1])+'"><span>'+esc(cls==='q'&&a[3]?a[3]:a[0])+'</span><b>'+a[1]+'</b></button>'}
+ function actBtn(a,cls){return '<button class="'+cls+'" data-nm="'+esc(a[0].toLowerCase())+'" style="'+ts(a[1])+'" data-a="did" data-v="'+esc(a[0]+'|'+a[1])+'"><span>'+esc(cls==='q'&&a[3]?a[3]:a[0])+'</span><b>'+a[1]+'</b></button>'}
  var freeA=acts.filter(function(a){return a[1]===0});
  var freeHtml=freeA.length?'<div class="tier" style="'+ts(0)+'">Free</div><div class="qgrid">'+freeA.map(function(a){return actBtn(a,'q')}).join('')+'</div>':'';
  if(!day.color){h+='<div class="empty">Pick a color to see what you can do.</div>'+freeHtml}
@@ -565,11 +576,11 @@ function render(){
   var menuHtml='';
   for(var mc=1;mc<=10&&mc<=lf;mc++){
    var mi=acts.filter(function(a){return a[1]===mc});if(!mi.length)continue;
-   menuHtml+='<div class="tier" style="'+ts(mc)+'">'+mc+(mc===1?' coin':' coins')+'</div>';
-   mi.forEach(function(a){menuHtml+=actBtn(a,'item')});
+   menuHtml+='<div class="mg"><div class="tier" style="'+ts(mc)+'">'+mc+(mc===1?' coin':' coins')+'</div>';
+   mi.forEach(function(a){menuHtml+=actBtn(a,'item')});menuHtml+='</div>';
   }
   if(menuHtml){
-   h+='<details><summary>The whole menu ('+lf+' coins or less)</summary>'+menuHtml;
+   h+='<details><summary>The whole menu ('+lf+' coins or less)</summary><div class="row"><input type="search" id="asearch" class="srch" placeholder="Search activities" value="'+esc(aq)+'" aria-label="Search activities"></div><div class="hint" id="anone" hidden>Nothing matches.</div>'+menuHtml;
    h+='</details>';
   }
   h+='<div class="tier" style="'+ts(2)+'">Something else</div><div class="row"><input type="text" id="elsetx" placeholder="What did you do?" value="'+esc(elseText)+'"></div><div class="hint">Type it, then tap what it cost in coins.</div><div class="row"><button class="chip'+(keepAct?' on':'')+'" data-a="keepact">'+(keepAct?'✓ ':'')+'Keep it as a button</button></div><div class="row">'+[0,1,2,3,4,5].filter(function(n){return n<=lf}).map(function(n){return '<button class="num" style="'+ts(n)+'" data-a="did" data-v="'+esc('Something else|'+n)+'">'+n+'</button>'}).join('')+'</div>';
@@ -577,27 +588,28 @@ function render(){
  h+='</div>';
  /* ate */
  if(showFood){
-h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food to add the amount shown. Tap the \u2212 to take that amount back off.</small></h2>';
+h+='<div class="card" id="foodcard" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food to add the amount shown. Tap the \u2212 to take that amount back off.</small></h2>';
 var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=Math.min(100,Math.round(lc.t/tg*100));
    calTop+='<div class="tg"><div><b>'+fn(tg)+'</b><small>Target</small></div><div><b>'+fn(lc.t)+(lc.miss?'+':'')+'</b><small>Eaten</small></div><div class="lf'+(lft<0?' over':'')+'"><b>'+fn(Math.abs(lft))+'</b><small>'+(lft<0?'Over':'Left')+'</small></div></div>'
    +'<div class="pbar'+(lft<0?' over':'')+'" role="img" aria-label="'+pc+' percent of the target"><i style="width:'+pc+'%"></i></div>'
    +'<div class="hint">Rough guesses. '+(lc.t?'':'No calories counted yet. ')+(lc.miss?lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number. ':'')+'The target can be changed in Make it yours.</div>'}
  h+=calTop;
+ h+='<div class="row"><input type="search" id="fsearch" class="srch" placeholder="Search foods and drinks" value="'+esc(fq)+'" aria-label="Search foods and drinks"></div><div class="hint nomatch" id="fnone" hidden>Nothing matches. Use Something else below to add it.</div>';
  foods.forEach(function(g){
   if(!g.items.length)return;
-  var gst='--k:'+g.c+';--kl:'+g.l+';--kt:#fff';
-  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid foodgrid">'+g.items.map(function(n){
+  var gst='--k:'+g.c+';--kl:'+g.l+';--kt:#fff',shut=!!fclosed[g.n];
+  h+='<div class="fgw"><button class="tier tbtn" style="--k:'+g.c+';--kt:#fff" data-a="fgtog" data-v="'+esc(g.n)+'" aria-expanded="'+(!shut)+'">'+(shut?'\u25B8 ':'\u25BE ')+g.n+' ('+g.items.length+')</button><div class="qgrid foodgrid fgb'+(shut?' shut':'')+'">'+g.items.map(function(n){
    var u=unitOf(n),tot=0,has=false;
    day.log.forEach(function(e){if(e.k==='ate'&&e.x===n){has=true;tot+=(e.q!==undefined&&e.q!==null)?e.q:u.d}});
    var cal=showCal?calOf(n):null;
-   var sub=u.sts?('tap a bottle size'+((cal!==null&&cal!==undefined&&cal>0)?' \u00B7 '+u.sts.map(function(z){return Math.round(cal*z)}).join(' or ')+' cal':'')):'+'+fmtQ(u.st,n)+((cal!==null&&cal!==undefined)?' \u00B7 '+Math.round(cal*u.st)+' cal':'');
-   return '<div class="fb" style="'+gst+'">'
+   var sub=u.sts?((u.sts.length===1?'tap to add a '+u.sts[0]+' oz can':'tap a bottle size')+((cal!==null&&cal!==undefined&&cal>0)?' \u00B7 '+u.sts.map(function(z){return Math.round(cal*z)}).join(' or ')+' cal':'')):'+'+fmtQ(u.st,n)+((cal!==null&&cal!==undefined)?' \u00B7 '+Math.round(cal*u.st)+' cal':'');
+   return '<div class="fb" data-nm="'+esc(n.toLowerCase())+'" style="'+gst+'">'
     +(has?'<button class="fm" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take '+esc(fmtQ(u.st,n))+' of '+esc(n)+' off">\u2212</button>':'')
     +'<button class="fn'+(has?'':' fn0')+'" data-a="'+(u.sts?'noop':'fplus')+'" data-v="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+esc(sub)+'</small></button>'
     +(has?'<button class="ft" data-a="fplus" data-v="'+esc(n)+'" aria-label="Total so far"><i>'+esc(fmtQ(Math.round(tot*100)/100,n))+'</i></button>':'')
     +(u.sts?u.sts.map(function(sz){return '<button class="fp2" data-a="fsize" data-v="'+sz+'" data-n="'+esc(n)+'" aria-label="Add '+sz+' oz of '+esc(n)+'">+'+sz+'</button>'}).join('')+'</div>'
      :'<button class="fp" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'"><em>+</em></button></div>');
-  }).join('')+'</div>';
+  }).join('')+'</div></div>';
  });
  h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div><div class="row"><input type="text" id="aamt" placeholder="how much, like 2 oz or ½ cup"></div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Keep it under</span><select class="pick" id="keepgrp">'+foods.map(function(g,k){return '<option value="'+k+'">'+g.n+'</option>'}).join('')+'</select></div>';
@@ -650,7 +662,7 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  h+='</details><details class="sub2"><summary>Food and drink buttons</summary>';
  foods.forEach(function(g,gi){
   if(!g.items.length)return;
-  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div>';
+  h+='<details class="sub2"><summary>'+g.n+' ('+g.items.length+')</summary>';
   g.items.forEach(function(n,ii){
    h+='<div class="ed"><input type="text" data-ed="fname" data-g="'+gi+'" data-i="'+ii+'" value="'+esc(n)+'" aria-label="Button name">'
     +'<div class="row"><select class="pick" data-ed="fgrp" data-g="'+gi+'" data-i="'+ii+'" aria-label="Move to">'+grpOpts(gi)+'</select>'
@@ -661,6 +673,7 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
     +'<div class="row"><span class="lbl" style="width:auto">Calories per '+esc(unitOf(n).u)+'</span><input type="text" inputmode="numeric" class="calin" data-ed="fcal" data-g="'+gi+'" data-i="'+ii+'" value="'+(calOf(n)===null||calOf(n)===undefined?'':Math.round(calOf(n)))+'" placeholder="none" aria-label="Calories per unit"></div>'
     +((unitOf(n).s&&!Object.prototype.hasOwnProperty.call(ucal,n))?'<div class="hint">Source: '+esc(unitOf(n).s)+'.</div>':'')+'</div>';
   });
+  h+='</details>';
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
  h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+unitChoices('').map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div><div class="hint">Cups for salad, soup or rice. Ounces for meat or cheese. Tablespoons for dressing or peanut butter. Teaspoons for oil or sugar.</div>';
@@ -685,7 +698,7 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  var openIdx=[];var ds2=document.querySelectorAll('details');for(var di=0;di<ds2.length;di++){if(ds2[di].open)openIdx.push(di)}
  app.innerHTML=h;
  var nd=document.querySelectorAll('details');openIdx.forEach(function(ix){if(nd[ix])nd[ix].open=true});
- window.scrollTo(0,sy);
+ window.scrollTo(0,sy);applyFilters();
  if(popG){var gl=document.querySelectorAll('[data-g="'+popG+'"]');for(var gi=0;gi<gl.length;gi++){var el=gl[gi];if(el.classList.contains('on')||el.classList.contains('lv')){el.classList.add('pop');el.style.animationDelay=(parseInt(el.getAttribute('data-i'),10)*30)+'ms'}}}
  else if(popA){var al=document.querySelectorAll('[data-a="'+popA+'"]');for(var ai=0;ai<al.length;ai++){if(al[ai].classList.contains('on')&&al[ai].getAttribute('data-v')===popV)al[ai].classList.add('pop')}}
  popG=null;popA=null;popV=null;
@@ -699,8 +712,19 @@ document.addEventListener('click',function(ev){
  var g=b.getAttribute('data-g');popG=g||null;popA=g?null:a;popV=b.getAttribute('data-v');curN=b.getAttribute('data-n')||'';
  act(a,b.getAttribute('data-v'));
 });
+function applyFilters(){
+ var fc=document.getElementById('foodcard');
+ if(fc){var q=fq.trim().toLowerCase(),any=false;fc.classList.toggle('fsearching',!!q);
+  [].forEach.call(fc.querySelectorAll('.fgw'),function(w){var vis=0;[].forEach.call(w.querySelectorAll('.fb'),function(b){var m=!q||b.getAttribute('data-nm').indexOf(q)>-1;b.hidden=!m;if(m)vis++});w.hidden=!!q&&!vis;if(vis)any=true});
+  var nn=document.getElementById('fnone');if(nn)nn.hidden=!q||any}
+ var mq=aq.trim().toLowerCase();
+ [].forEach.call(document.querySelectorAll('.mg'),function(w){var vis=0;[].forEach.call(w.querySelectorAll('.item'),function(b){var m=!mq||b.getAttribute('data-nm').indexOf(mq)>-1;b.hidden=!m;if(m)vis++});w.hidden=!!mq&&!vis});
+ var an=document.getElementById('anone');if(an){var anyA=[].some.call(document.querySelectorAll('.mg'),function(w){return !w.hidden});an.hidden=!mq||anyA}
+}
 document.addEventListener('input',function(ev){
  var id=ev.target.id;
+ if(id==='fsearch'){fq=ev.target.value;applyFilters();return}
+ if(id==='asearch'){aq=ev.target.value;applyFilters();return}
  if(id==='pw'){day.painWhere=ev.target.value;save()}
  else if(id==='pwn'){day.painWhen=ev.target.value;save()}
  else if(id==='elsetx'){elseText=ev.target.value}
