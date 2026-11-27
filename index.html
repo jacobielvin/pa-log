@@ -135,6 +135,22 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .pc.none{background:transparent;border:2px dashed #b9a98f;color:#8a7a66}
 .cr b{font-size:1.35rem;line-height:1}.cr small{font-size:.8rem;font-weight:700}
 .cr.y b{color:#c0392b}.cr.n b{color:#26804a}.cr.none b{color:#8a7a66}
+.tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.tg div{background:#fff;border:2px solid #e6dcc6;border-radius:12px;padding:8px 4px;text-align:center}
+.tg b{display:block;font-size:1.35rem;line-height:1.2;color:#2b2420}
+.tg small{display:block;font-size:.8rem;font-weight:700;color:#4a3d30}
+.tg .lf.over b{color:#b3261e}
+.pbar{height:16px;border:2px solid #b9a98f;border-radius:10px;background:#fff;overflow:hidden;margin:8px 0 2px}
+.pbar i{display:block;height:100%;background:#2e7d4f}
+.pbar.over i{background:#d9822b}
+.cbars{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;height:120px;align-items:end;margin:8px 0 2px;border-bottom:2px solid #b9a98f}
+.cbars .cb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.cbars .cb i{display:block;width:70%;border-radius:6px 6px 0 0;background:#2e7d4f}
+.cbars .cb i.over{background:#d9822b}
+.cbars .tl{position:absolute;left:0;right:0;border-top:2px dashed #5a4a3a;pointer-events:none}
+.cbars .tl span{position:absolute;right:0;top:-1.3em;font-size:.75rem;font-weight:800;background:#fffaf0;padding:0 3px;color:#4a3d30}
+.clab{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;font-size:.8rem;font-weight:800;color:#4a3d30}
+.clab span small{display:block;font-weight:700}
 .dsum{list-style:none;margin-top:4px}
 .dsum li{padding:8px 2px;border-top:1px solid #eadfc9;font-size:1rem}
 .dsum li.nudge{background:#e1eedf;border-radius:10px;padding:10px;font-weight:700;margin-top:6px;border-top:0}
@@ -217,6 +233,7 @@ function wr(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
 function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){s=null}
  return s&&s.R?s:{R:3,Y:6,G:10}}
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
+function getTarget(){var t=parseInt(rd('pa-target'),10);return (t>=800&&t<=4000)?t:1800}
 /* food buttons and own activities: saved on this phone; bad data falls back to the originals */
 /* calories are now saved per unit (per oz, per cup...). Older saves were per tap, so they are converted once. */
 var RENAME={'cheese, 1 oz':'Cheese','bread, slice':'Bread','butter, 1 oz':'Butter','water, 20 oz':'Water','bannana':'Banana','mash potatoes':'Mashed potatoes','pepsi':'Soda','coke':'Soda','h-e-b cola':'Soda','heb cola':'Soda'};
@@ -399,6 +416,7 @@ function act(a,v){
  else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to remove all your own activities');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=[];saveActs();render();toast('Your own activities are removed','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
+ else if(a==='tgt'){wr('pa-target',String(Math.max(800,Math.min(4000,getTarget()+parseInt(v,10)))))}
  else if(a==='togcal'){showCal=!showCal;wr('pa-showcal',showCal?'1':'0')}
  else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;undoX={t:'reset',f:JSON.parse(JSON.stringify(foods)),c:JSON.parse(JSON.stringify(ucal)),u:JSON.parse(JSON.stringify(uunit)),s:JSON.parse(JSON.stringify(ustep))};foods=defaultFoods();saveFoods();ucal={};saveCal();uunit={};saveUnits();ustep={};saveSteps();render();toast('Original buttons are back','undox');return}
  else if(a==='stepH'){var f=v.split('|');var cur2=parseFloat(day[f[0]]);if(isNaN(cur2))cur2=(f[0]==='sleepH'?7:0);cur2=Math.max(0,Math.min(24,cur2+parseFloat(f[1])));day[f[0]]=String(cur2);save()}
@@ -453,7 +471,9 @@ function dashHtml(){
   if(x.sl===null)return '<span class="vb none"></span><span class="nv">–</span>';
   return '<span class="vb"><i style="height:'+Math.max(8,Math.min(x.sl,10)/10*100)+'%;background:#2b7fb0"></i></span><span class="nv">'+fmt1(x.sl)+' h</span>';
  });
- if(showFood&&showCal){h+=row('Calories (rough guess)','',function(x){var has=x.o.log.some(function(e){return e.k==='ate'}),lc=logCal(x.o.log);return '<span class="nv">'+((has&&lc.t)?lc.t+(lc.miss?'+':''):'\u2013')+'</span>'})}
+ if(showFood&&showCal){
+  var tg2=getTarget(),cv=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}),mx=Math.max(tg2*1.25,Math.max.apply(null,cv));
+  h+='<div class="dt2">Calories vs target (rough guess)</div><div class="cbars">'+days.map(function(x,i){var v=cv[i];return '<div class="cb" data-a="open" data-v="'+x.d+'" role="button">'+(v?'<i class="'+(v>tg2?'over':'')+'" style="height:'+Math.round(v/mx*100)+'%"></i>':'')+'</div>'}).join('')+'<div class="tl" style="bottom:'+Math.round(tg2/mx*100)+'%"><span>'+tg2+'</span></div></div><div class="clab">'+days.map(function(x,i){return '<span>'+wdn(x.d).w+'<small>'+(cv[i]||'\u2013')+'</small></span>'}).join('')+'</div><div class="hint">Green is at or under the target. Orange is over.</div>'}
  h+=row('Crash','',function(x){
   var c=x.o.crash;
   if(c==='Yes')return '<span class="cr y"><b>✕</b><br><small>Crash</small></span>';
@@ -476,7 +496,7 @@ function dashHtml(){
  if(crashes)L.push('Crashes this week: <b>'+crashes+'</b>');else if(noc)L.push('No crashes this week 🎄');
  if(ens.length)L.push('Average energy: <b>'+fmt1(mean(ens))+' of 5</b>');
  if(sls.length)L.push('Average sleep: <b>'+fmt1(mean(sls))+' hours</b>');
- if(showFood&&showCal){var cls=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}).filter(function(v){return v>0});if(cls.length)L.push('Average calories on days with food logged: <b>'+Math.round(mean(cls))+'</b> (rough guess)')}
+ if(showFood&&showCal){var cls=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}).filter(function(v){return v>0});if(cls.length){var av=Math.round(mean(cls)),t3=getTarget();L.push('Average calories on days with food logged: <b>'+av+'</b> (rough guess)');L.push('Days at or under the '+t3+' target: <b>'+cls.filter(function(v){return v<=t3}).length+' of '+cls.length+'</b> \u00B7 average is '+Math.abs(av-t3)+(av<=t3?' under':' over')+' the target')}}
  if(streak>0)L.push('Days in a row with no crash: <b>'+streak+'</b>');
  h+='<ul class="dsum">'+L.map(function(t){return '<li>'+t+'</li>'}).join('');
  if(crashes>=2)h+='<li class="nudge">'+crashes+' crashes this week. The plan says take 1 coin off each color. The Coin numbers box near the bottom does that.</li>';
@@ -553,7 +573,10 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
      :'<button class="fp" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'"><em>+</em></button></div>');
   }).join('')+'</div>';
  });
-  if(showCal){var lc=logCal(day.log);h+='<div class="hint" style="margin-top:8px">'+(lc.t?'About <b>'+lc.t+'</b> calories so far today (rough guess).':'No calories counted yet.')+(lc.miss?' '+lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number.':'')+'</div>'}
+  if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=Math.min(100,Math.round(lc.t/tg*100));
+   h+='<div class="tg"><div><b>'+tg+'</b><small>Target</small></div><div><b>'+lc.t+(lc.miss?'+':'')+'</b><small>Eaten</small></div><div class="lf'+(lft<0?' over':'')+'"><b>'+Math.abs(lft)+'</b><small>'+(lft<0?'Over':'Left')+'</small></div></div>'
+   +'<div class="pbar'+(lft<0?' over':'')+'" role="img" aria-label="'+pc+' percent of the target"><i style="width:'+pc+'%"></i></div>'
+   +'<div class="hint">Rough guesses. '+(lc.t?'':'No calories counted yet. ')+(lc.miss?lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number. ':'')+'The target can be changed in Make it yours.</div>'}
  h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div><div class="row"><input type="text" id="aamt" placeholder="how much, like 2 oz or ½ cup"></div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Keep it under</span><select class="pick" id="keepgrp">'+foods.map(function(g,k){return '<option value="'+k+'">'+g.n+'</option>'}).join('')+'</select></div>';
  h+='<button class="big pale" data-a="addate">Add this once</button><button class="big" data-a="keepfood">Add it and keep it as a button</button></div>';
@@ -600,6 +623,8 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
  h+='<details class="sub2"><summary>Show or hide food and calories</summary>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Food section: '+(showFood?'showing':'hidden')+'</span><button class="small" data-a="togfood">'+(showFood?'Hide it':'Show it')+'</button></div>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Calories: '+(showCal?'showing':'hidden')+'</span><button class="small" data-a="togcal">'+(showCal?'Hide them':'Show them')+'</button></div>';
+ h+='<div class="row"><span style="flex:1;font-weight:700">Daily calorie target: '+getTarget()+'</span><button class="small" data-a="tgt" data-v="-100">\u2212 100</button><button class="small" data-a="tgt" data-v="100">+ 100</button></div>';
+ h+='<div class="hint">1800 is a middle-of-the-road starting point for slow weight loss. It is a guess, not a prescription. Change it to whatever the doctor or dietitian says.</div>';
  h+='</details><details class="sub2"><summary>Food and drink buttons</summary>';
  foods.forEach(function(g,gi){
   if(!g.items.length)return;
