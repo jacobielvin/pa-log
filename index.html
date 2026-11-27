@@ -233,7 +233,7 @@ function wr(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
 function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){s=null}
  return s&&s.R?s:{R:3,Y:6,G:10}}
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
-function getTarget(){var t=parseInt(rd('pa-target'),10);return (t>=800&&t<=4000)?t:1800}
+function getTarget(){var t=parseInt(rd('pa-target'),10);return (t>=800&&t<=4000)?t:2300}
 /* food buttons and own activities: saved on this phone; bad data falls back to the originals */
 /* calories are now saved per unit (per oz, per cup...). Older saves were per tap, so they are converted once. */
 var RENAME={'cheese, 1 oz':'Cheese','bread, slice':'Bread','butter, 1 oz':'Butter','water, 20 oz':'Water','bannana':'Banana','mash potatoes':'Mashed potatoes','pepsi':'Soda','coke':'Soda','h-e-b cola':'Soda','heb cola':'Soda'};
@@ -624,7 +624,7 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
  h+='<div class="row"><span style="flex:1;font-weight:700">Food section: '+(showFood?'showing':'hidden')+'</span><button class="small" data-a="togfood">'+(showFood?'Hide it':'Show it')+'</button></div>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Calories: '+(showCal?'showing':'hidden')+'</span><button class="small" data-a="togcal">'+(showCal?'Hide them':'Show them')+'</button></div>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Daily calorie target: '+getTarget()+'</span><button class="small" data-a="tgt" data-v="-100">\u2212 100</button><button class="small" data-a="tgt" data-v="100">+ 100</button></div>';
- h+='<div class="hint">1800 is a middle-of-the-road starting point for slow weight loss. It is a guess, not a prescription. Change it to whatever the doctor or dietitian says.</div>';
+ h+='<div class="hint">2300 is a gentle starting point for slow weight loss, worked out from 68 years old, 6 ft 2, 250 lb and medium activity. It is an estimate, not a prescription. Change it to whatever the doctor or dietitian says.</div>';
  h+='</details><details class="sub2"><summary>Food and drink buttons</summary>';
  foods.forEach(function(g,gi){
   if(!g.items.length)return;
