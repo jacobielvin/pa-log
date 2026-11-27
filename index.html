@@ -288,10 +288,17 @@ function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.pars
   wr('pa-foodsv2','1');wr('pa-foods',JSON.stringify(d.map(function(g){return g.items})))}
  return d}
 function saveFoods(){wr('pa-foods',JSON.stringify(foods.map(function(g){return g.items})))}
-function loadActs(){var s=rd('pa-acts');try{s=s?JSON.parse(s):[]}catch(e){s=[]}
- if(!Array.isArray(s))return [];
- return s.filter(function(a){return Array.isArray(a)&&typeof a[0]==='string'&&a[0].trim()&&typeof a[1]==='number'&&a[1]>=0&&a[1]<=10})}
-function saveActs(){wr('pa-acts',JSON.stringify(acts))}
+var PINS={'Making a snack':'Snack','Riding in the car, 1 hour':'Ride, 1 hour','Seated tai chi, 10 minutes':'Seated tai chi','10-minute walk':'10-minute walk','Shower, get dressed':'Shower','Standing tai chi, 10 minutes':'Standing tai chi','Lymphatic flush, 10 minutes':'Lymphatic flush','Weights, short session':'Weights','Store run, like Menards':'Store run'};
+PINS[MENU[7][2][0]]='Far appointment';
+/* every activity is [name, coins, pinned 0/1, short label]. Seeded once from the starter menu plus any activities already added on this phone. */
+function defaultActs(){var a=[];MENU.forEach(function(t){t[2].forEach(function(n){a.push([n,t[0],PINS[n]?1:0,PINS[n]||''])})});return a}
+function cleanActs(s){return s.filter(function(a){return Array.isArray(a)&&typeof a[0]==='string'&&a[0].trim()&&typeof a[1]==='number'&&a[1]>=0&&a[1]<=10}).map(function(a){return [a[0],a[1],a[2]?1:0,typeof a[3]==='string'?a[3]:'']})}
+function loadActs(){var s=rd('pa-menu'),r=null;try{r=s?JSON.parse(s):null}catch(e){r=null}
+ if(Array.isArray(r))return cleanActs(r);
+ var old=[];try{var o=rd('pa-acts');old=o?JSON.parse(o):[]}catch(e){old=[]}
+ var a=defaultActs();if(Array.isArray(old))cleanActs(old).forEach(function(x){if(!a.some(function(y){return y[0].toLowerCase()===x[0].toLowerCase()}))a.push([x[0],x[1],0,''])});
+ wr('pa-menu',JSON.stringify(a));return a}
+function saveActs(){wr('pa-menu',JSON.stringify(acts))}
 function foodCanon(n){var l=String(n).toLowerCase();for(var g=0;g<foods.length;g++)for(var i=0;i<foods[g].items.length;i++)if(foods[g].items[i].toLowerCase()===l)return foods[g].items[i];return null}
 function blank(){return {color:null,log:[],sleepH:'',sleepQ:'',nap:'',eyes:[],pain:null,painWhere:'',painWhen:'',gas:'',energy:{Morning:null,Afternoon:null,Evening:null},crash:null,totals:{}}}
 function load(d){var v=rd('pa-log-'+d);if(!v)return blank();try{var o=JSON.parse(v);var b=blank();for(var k in o)b[k]=o[k];if(Array.isArray(b.log))b.log.forEach(function(e){if(e&&e.k==='ate'&&typeof e.x==='string')e.x=fixName(e.x);if(/^(Soda|Water)$/.test(e.x)&&/cup/.test(e.un||'')&&typeof e.q==='number'){e.q=Math.round(e.q*8*100)/100;e.un='oz'}});return b}catch(e){return blank()}}
@@ -365,7 +372,7 @@ function act(a,v){
  else if(a==='did'){var i=v.split('|');var nm=i[0];var cst=parseInt(i[1],10);
   if(nm==='Something else'){var et=(document.getElementById('elsetx')||{}).value||elseText;nm=et.trim()||'Something else';elseText='';
    var sv=nm.replace(/\|/g,'/');
-   if(keepAct&&nm!=='Something else'&&!acts.some(function(x){return x[0].toLowerCase()===sv.toLowerCase()})){acts.push([sv,cst]);saveActs()}
+   if(keepAct&&nm!=='Something else'&&!acts.some(function(x){return x[0].toLowerCase()===sv.toLowerCase()})){acts.push([sv,cst,0,'']);saveActs()}
    keepAct=false}
   addDid(nm,cst);return}
  else if(a==='rm'){var ri=parseInt(v,10);undoItem={e:day.log[ri],i:ri,d:date};day.log.splice(ri,1);save();render();toast('Removed',true);return}
@@ -409,11 +416,12 @@ function act(a,v){
  else if(a==='fup'||a==='fdn'){var mp=v.split('|'),mg=+mp[0],mi=+mp[1],mj=(a==='fup')?mi-1:mi+1,arr=foods[mg].items;if(mj>=0&&mj<arr.length){var tmp=arr[mi];arr[mi]=arr[mj];arr[mj]=tmp;saveFoods()}}
  else if(a==='addact'){var nn=((document.getElementById('newact')||{}).value||'').trim().replace(/\|/g,'/');if(!nn){toast('Type the name first');return}
   if(acts.some(function(x){return x[0].toLowerCase()===nn.toLowerCase()})){toast('That one is already there');return}
-  acts.push([nn,parseInt((document.getElementById('newactc')||{}).value,10)||0]);saveActs();render();toast('Added: '+nn);return}
+  acts.push([nn,parseInt((document.getElementById('newactc')||{}).value,10)||0,0,'']);saveActs();render();toast('Added: '+nn);return}
+ else if(a==='apin'){var pi=parseInt(v,10);if(acts[pi]){acts[pi][2]=acts[pi][2]?0:1;saveActs()}}
  else if(a==='adel'){var ai=parseInt(v,10),rem=acts.splice(ai,1)[0];saveActs();undoX={t:'act',i:ai,v:rem};render();toast('Removed: '+rem[0],'undox');return}
  else if(a==='undox'){if(undoX){if(undoX.t==='acts'){acts=undoX.v;saveActs()}else if(undoX.t==='reset'){foods=undoX.f;saveFoods();ucal=undoX.c;saveCal();uunit=undoX.u;saveUnits();ustep=undoX.s;saveSteps()}else if(undoX.t==='log'){if(undoX.d===date){day.log=undoX.v;save()}}else if(undoX.t==='clear'){if(undoX.d===date){day=undoX.v;save()}else{wr('pa-log-'+undoX.d,JSON.stringify(undoX.v))}}else if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
  else if(a==='keepact'){keepAct=!keepAct}
- else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to remove all your own activities');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=[];saveActs();render();toast('Your own activities are removed','undox');return}
+ else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to put the original activities back');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=defaultActs();saveActs();render();toast('Original activities are back','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
  else if(a==='tgt'){wr('pa-target',String(Math.max(800,Math.min(4000,getTarget()+parseInt(v,10)))))}
@@ -530,23 +538,22 @@ function render(){
  h+='</div>';
  /* activities: only what the plan allows */
  h+='<div class="card" style="--ac:#f0c24d"><h2>I did something<small>Only what fits your coins left</small></h2>';
- var freeIts=MENU[0][2];
- var freeHtml='<div class="tier" style="'+ts(0)+'">Free</div><div class="qgrid">'+freeIts.map(function(it){return '<button class="q" style="'+ts(0)+'" data-a="did" data-v="'+esc(it+'|0')+'"><span>'+esc(it)+'</span><b>0</b></button>'}).join('')+'</div>';
+ function actBtn(a,cls){return '<button class="'+cls+'" style="'+ts(a[1])+'" data-a="did" data-v="'+esc(a[0]+'|'+a[1])+'"><span>'+esc(cls==='q'&&a[3]?a[3]:a[0])+'</span><b>'+a[1]+'</b></button>'}
+ var freeA=acts.filter(function(a){return a[1]===0});
+ var freeHtml=freeA.length?'<div class="tier" style="'+ts(0)+'">Free</div><div class="qgrid">'+freeA.map(function(a){return actBtn(a,'q')}).join('')+'</div>':'';
  if(!day.color){h+='<div class="empty">Pick a color to see what you can do.</div>'+freeHtml}
  else{
-  var hiddenN=0;MENU.forEach(function(t){if(t[0]>lf)hiddenN+=t[2].length});
-  var qs=QUICK.filter(function(q){return q[1]<=lf});
-  if(qs.length)h+='<div class="qgrid">'+qs.map(function(q){return '<button class="q" style="'+ts(q[1])+'" data-a="did" data-v="'+esc(q[0]+'|'+q[1])+'"><span>'+esc(q[0])+'</span><b>'+q[1]+'</b></button>'}).join('')+'</div>';
+  var hiddenN=acts.filter(function(a){return a[1]>lf}).length;
+  var qs=acts.filter(function(a){return a[2]&&a[1]>0&&a[1]<=lf});
+  if(qs.length)h+='<div class="qgrid">'+qs.map(function(a){return actBtn(a,'q')}).join('')+'</div>';
   h+=freeHtml;
-  var mine=acts.map(function(a,i){return [a,i]}).filter(function(x){return x[0][1]<=lf});
-  if(mine.length)h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">My own</div><div class="qgrid">'+mine.map(function(x){return '<button class="q" style="'+ts(x[0][1])+'" data-a="did" data-v="'+esc(x[0][0]+'|'+x[0][1])+'"><span>'+esc(x[0][0])+'</span><b>'+x[0][1]+'</b></button>'}).join('')+'</div>';
   if(hiddenN)h+='<div class="hint">'+hiddenN+' heavier things are hidden. They cost more than the '+lf+' coin'+(lf===1?'':'s')+' you have left.</div>';
   var menuHtml='';
-  MENU.forEach(function(t){
-   if(t[0]===0||t[0]>lf)return;
-   menuHtml+='<div class="tier" style="'+ts(t[0])+'">'+t[1]+'</div>';
-   t[2].forEach(function(it){menuHtml+='<button class="item" style="'+ts(t[0])+'" data-a="did" data-v="'+esc(it+'|'+t[0])+'"><span>'+esc(it)+'</span><b>'+t[0]+'</b></button>'});
-  });
+  for(var mc=1;mc<=10&&mc<=lf;mc++){
+   var mi=acts.filter(function(a){return a[1]===mc});if(!mi.length)continue;
+   menuHtml+='<div class="tier" style="'+ts(mc)+'">'+mc+(mc===1?' coin':' coins')+'</div>';
+   mi.forEach(function(a){menuHtml+=actBtn(a,'item')});
+  }
   if(menuHtml){
    h+='<details><summary>The whole menu ('+lf+' coins or less)</summary>'+menuHtml;
    h+='</details>';
@@ -642,15 +649,19 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
  h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+unitChoices('').map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div><div class="hint">Cups for salad, soup or rice. Ounces for meat or cheese. Tablespoons for dressing or peanut butter. Teaspoons for oil or sugar.</div>';
- h+='</details><details class="sub2"><summary>My own activities</summary>';
- if(!acts.length)h+='<div class="hint">None yet. Add one below, or use "Keep it as a button" under Something else in the activity box.</div>';
- acts.forEach(function(a,ai){
-  h+='<div class="ed"><input type="text" data-ed="aname" data-i="'+ai+'" value="'+esc(a[0])+'" aria-label="Activity name"><div class="row"><select class="pick" data-ed="acost" data-i="'+ai+'" aria-label="Cost">'+costOpts(a[1])+'</select><button class="small del" data-a="adel" data-v="'+ai+'">Remove</button></div></div>';
- });
+ h+='</details><details class="sub2"><summary>Activities and their coins</summary><div class="hint">Change a name, change what it costs, pin it to the top of the list, or remove it. Free ones always show.</div>';
+ for(var ec=0;ec<=10;ec++){
+  var eg=acts.map(function(a,i){return [a,i]}).filter(function(x){return x[0][1]===ec});
+  h+='<details class="sub2"><summary>'+(ec===0?'Free':ec+(ec===1?' coin':' coins'))+' ('+eg.length+')</summary>';
+  eg.forEach(function(x){var a=x[0],ai=x[1];
+   h+='<div class="ed"><input type="text" data-ed="aname" data-i="'+ai+'" value="'+esc(a[0])+'" aria-label="Activity name"><div class="row"><select class="pick" data-ed="acost" data-i="'+ai+'" aria-label="Cost">'+costOpts(a[1])+'</select><button class="chip'+(a[2]?' on':'')+'" data-a="apin" data-v="'+ai+'">'+(a[2]?'✓ ':'')+'Pinned</button><button class="small del" data-a="adel" data-v="'+ai+'">Remove</button></div></div>'});
+  if(!eg.length)h+='<div class="hint">Nothing at this cost.</div>';
+  h+='</details>';
+ }
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add an activity</div><div class="row"><input type="text" id="newact" placeholder="what is it?"></div>';
  h+='<div class="row"><select class="pick" id="newactc">'+costOpts(1)+'</select><button class="small" data-a="addact">Add activity</button></div>';
  h+='</details><details class="sub2"><summary>Start over</summary><div class="row" style="margin-top:8px"><button class="small del" data-a="resetfoods">'+(resetArm?'Tap again to confirm':'Put the original food buttons back')+'</button></div>';
- h+='<div class="row"><button class="small del" data-a="resetacts">'+(actArm?'Tap again to confirm':'Remove all my own activities')+'</button></div><div class="row"><button class="small del" data-a="cleartoday">'+(clrArm?'Tap again to confirm':'Clear everything logged for this day')+'</button></div></details>';
+ h+='<div class="row"><button class="small del" data-a="resetacts">'+(actArm?'Tap again to confirm':'Put the original activities back')+'</button></div><div class="row"><button class="small del" data-a="cleartoday">'+(clrArm?'Tap again to confirm':'Clear everything logged for this day')+'</button></div></details>';
  h+='<div class="hint">The coin numbers are in the Coin numbers box above.</div></details></div>';
  h+='<footer>Saved on this phone. Rest is part of the job.</footer>';
  var app=document.getElementById('app');
@@ -708,7 +719,7 @@ document.addEventListener('change',function(ev){
   var to=parseInt(t.value,10);
   if(foods[g]&&foods[to]&&to!==g){var it=foods[g].items.splice(i,1)[0];foods[to].items.push(it);saveFoods();render();toast('Moved to '+foods[to].n)}
  }else if(ed==='aname'){
-  var an=t.value.trim().replace(/\|/g,'/');if(an&&acts[i]){acts[i][0]=an;saveActs()}render();
+  var an=t.value.trim().replace(/\|/g,'/');if(an&&acts[i]){acts[i][0]=an;acts[i][3]='';saveActs()}render();
  }else if(ed==='acost'){
   if(acts[i]){acts[i][1]=parseInt(t.value,10)||0;saveActs()}render();
  }
