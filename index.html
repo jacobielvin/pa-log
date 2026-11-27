@@ -100,15 +100,9 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .fb .fn span{overflow-wrap:anywhere}
 .fb .fn small{font-weight:600;font-size:.8rem;color:#4a3d30}
 .fb .fp{width:46px;flex:none;display:flex;align-items:center;justify-content:center}
+.fb .fp.tt{width:auto;min-width:62px;padding:0 6px}.fb .fp i{background:var(--k);color:var(--kt);border-radius:10px;padding:3px 8px;font-style:normal;font-weight:800;font-size:.9rem;line-height:1.1;text-align:center}
 .fb .fp b{background:var(--k);color:var(--kt);border-radius:50%;min-width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:.95rem}
 .fb .fp em{font-style:normal;font-weight:900;font-size:1.6rem;color:var(--k);line-height:1}
-.fb.pk-on{outline:3px solid #2b2420}
-.pk{grid-column:1/-1;border:3px solid var(--k);border-radius:12px;background:#fff;padding:8px;min-width:0}
-.pkh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;margin-bottom:6px}
-.pkg{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;margin-bottom:6px}
-.pkb{min-height:54px;border-radius:12px;border:3px solid var(--k);background:var(--kl);color:#2b2420;font:inherit;font-weight:800;font-size:1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;padding:2px 4px;cursor:pointer}
-.pkb small{font-weight:600;font-size:.8rem;color:#4a3d30}
-.pkb:active{background:var(--k);color:var(--kt)}
 .calin{width:90px!important;flex:none!important;text-align:center}
 .ed{margin:6px 0 10px;padding:8px;border:2px solid #e6dcc6;border-radius:12px;background:#fff}
 .ed input[type=text]{width:100%;flex:none;margin-bottom:2px}
@@ -161,30 +155,32 @@ var MENU=[
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
 var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
-/* How each food is measured. t = cup, oz, tbsp or count. c = rough calories in ONE unit. d = the amount one old single tap meant (used for days logged before amounts existed).
-   o = amounts shown as buttons (leave out to use the standard set for that unit). s = where the number came from. Editable in Make it yours. */
-var NOUN={cup:['cup','cups'],oz:['oz','oz'],tbsp:['tbsp','tbsp'],count:['each','each']};
-var TLBL={cup:'cups',oz:'ounces',tbsp:'tablespoons',count:'each'};
-var PRE={cup:[0.25,0.5,0.75,1,1.5,2],oz:[0.5,1,2,3,4],tbsp:[1,2,3,4],count:[1,2,3,4]};
+/* How each food is measured, like the Food Tracker: one unit per food, and one tap adds one step of it.
+   t = cup, oz, tbsp, tsp (or count for whole items like eggs). st = how much one tap adds. c = rough calories in ONE unit.
+   d = what one old single tap meant (only used for days logged before amounts existed). s = where the number came from. All editable in Make it yours. */
+var NOUN={cup:['cup','cups'],oz:['oz','oz'],tbsp:['tbsp','tbsp'],tsp:['tsp','tsp'],count:['item','items']};
+var TLBL={cup:'cups',oz:'ounces',tbsp:'tablespoons',tsp:'teaspoons',count:'whole items'};
+var DSTEP={cup:0.5,oz:1,tbsp:1,tsp:1,count:1};
+var STEPS=[0.25,0.5,1,2];
 var APPLES=['Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)'];
 var ITEMS={
- 'Eggs':{t:'count',u:'egg',p:'eggs',c:70,d:1,o:[1,2,3,4],s:'1 large egg, typical value'},
- 'Jimmy Dean sausage':{t:'count',u:'link',p:'links',c:73.3,d:3,o:[1,2,3,4,5,6],s:'Jimmy Dean label, 3 cooked original links = 220'},
- 'Greek yogurt':{t:'cup',c:133.3,d:0.75,s:'H-E-B nonfat plain label, 3/4 cup = 100. Whole milk would be 210 per 3/4 cup'},
- 'Cheese':{t:'oz',c:110,d:1,s:'sharp cheddar, typical value'},
- 'Nuts':{t:'cup',c:810,d:0.25,o:[0.25,0.5,0.75,1],s:'mixed nuts, typical value, about 200 per 1/4 cup. Check your brand'},
- 'Apple':{t:'count',u:'apple',p:'apples',c:95,d:1,o:[0.5,1,2],s:'1 medium apple, typical value'},
- 'Banana':{t:'count',u:'banana',p:'bananas',c:105,d:1,o:[0.5,1,2],s:'1 medium, typical value'},
- 'Strawberries':{t:'cup',c:50,d:1,s:'typical value'},
- 'Celery':{t:'count',u:'stalk',p:'stalks',c:10,d:1,o:[1,2,3,4],s:'typical value'},
- 'Pepsi':{t:'cup',c:100,d:1.5,tag:{1.5:'1 can'},s:'12 oz can = 150, so 100 per cup'},
- 'Coke':{t:'cup',c:93.3,d:1.5,tag:{1.5:'1 can'},s:'12 oz can = 140, so about 93 per cup'},
- 'H-E-B Cola':{t:'cup',c:113.3,d:1.5,tag:{1.5:'1 can'},s:'12 oz can = 170, so about 113 per cup. The cane sugar pack says 180 per can'},
- '2% milk':{t:'cup',c:120,d:1,s:'typical value'},
- 'Hot cocoa (Keurig)':{t:'cup',c:80,d:1,s:'a guess, depends on the brand'},
- 'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',c:53,d:1,o:[1,2,3,4],s:'Central Market label, 210 per 4 truffles'}
+ 'Eggs':{t:'count',u:'egg',p:'eggs',st:1,c:70,d:1,s:'1 large egg, typical value'},
+ 'Jimmy Dean sausage':{t:'count',u:'link',p:'links',st:1,c:73.3,d:3,s:'Jimmy Dean label, 3 cooked original links = 220'},
+ 'Greek yogurt':{t:'cup',st:0.25,c:133.3,d:0.75,s:'H-E-B nonfat plain label, 3/4 cup = 100. Whole milk would be 210 per 3/4 cup'},
+ 'Cheese':{t:'oz',st:1,c:110,d:1,s:'sharp cheddar, typical value'},
+ 'Nuts':{t:'cup',st:0.25,c:810,d:0.25,s:'mixed nuts, typical value, about 200 per 1/4 cup. Check your brand'},
+ 'Apple':{t:'count',u:'apple',p:'apples',st:0.5,c:95,d:1,s:'1 medium apple, typical value'},
+ 'Banana':{t:'count',u:'banana',p:'bananas',st:0.5,c:105,d:1,s:'1 medium, typical value'},
+ 'Strawberries':{t:'cup',st:0.5,c:50,d:1,s:'typical value'},
+ 'Celery':{t:'count',u:'stalk',p:'stalks',st:1,c:10,d:1,s:'typical value'},
+ 'Pepsi':{t:'cup',st:0.5,c:100,d:1.5,s:'12 oz can = 150, so 100 per cup. A can is 1\u00BD cups'},
+ 'Coke':{t:'cup',st:0.5,c:93.3,d:1.5,s:'12 oz can = 140, so about 93 per cup. A can is 1\u00BD cups'},
+ 'H-E-B Cola':{t:'cup',st:0.5,c:113.3,d:1.5,s:'12 oz can = 170, so about 113 per cup. A can is 1\u00BD cups. The cane sugar pack says 180 per can'},
+ '2% milk':{t:'cup',st:0.5,c:120,d:1,s:'typical value'},
+ 'Hot cocoa (Keurig)':{t:'cup',st:0.5,c:80,d:1,s:'a guess, depends on the brand'},
+ 'Truffle chocolates':{t:'count',u:'truffle',p:'truffles',st:1,c:53,d:1,s:'Central Market label, 210 per 4 truffles'}
 };
-APPLES.forEach(function(n){ITEMS[n]={t:'count',u:'apple',p:'apples',c:95,d:1,o:[0.5,1,2],s:'1 medium apple (about 3 inches across). Varieties differ by roughly 10 calories, so this is a typical value'}});
+APPLES.forEach(function(n){ITEMS[n]={t:'count',u:'apple',p:'apples',st:0.5,c:95,d:1,s:'1 medium apple (about 3 inches across). Varieties differ by roughly 10 calories, so this is a typical value'}});
 var SIZES=['bites','handful','bowl','plate'];
 var EYES=['Fine','Heavy','Red','Watery'];
 var PAIN=[['#26804a','#fff'],['#3f8a32','#fff'],['#8cbc3c','#2b2420'],['#b9c230','#2b2420'],['#e0c42a','#2b2420'],['#f2b51f','#2b2420'],['#f29a1d','#2b2420'],['#ee7a1f','#2b2420'],['#e4552a','#fff'],['#d33a2c','#fff'],['#b3202f','#fff']];
@@ -217,12 +213,17 @@ function loadUnits(){var r=rd('pa-units'),q;try{q=r?JSON.parse(r):{}}catch(e){q=
  if(!q||typeof q!=='object'||Array.isArray(q))return {};
  var o={};for(var k in q){if(typeof q[k]==='string'&&TLBL[q[k]])o[k]=q[k]}return o}
 function saveUnits(){wr('pa-units',JSON.stringify(uunit))}
+function loadSteps(){var r=rd('pa-steps'),q;try{q=r?JSON.parse(r):{}}catch(e){q={}}
+ if(!q||typeof q!=='object'||Array.isArray(q))return {};
+ var o={};for(var k in q){if(typeof q[k]==='number'&&q[k]>0&&q[k]<=10)o[k]=q[k]}return o}
+function saveSteps(){wr('pa-steps',JSON.stringify(ustep))}
 function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:{t:'cup',c:null,d:1};
- var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,o:b.o||PRE[b.t],tag:b.tag||{},s:b.s||''};
+ var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,st:b.st||DSTEP[b.t],s:b.s||''};
  var ov=Object.prototype.hasOwnProperty.call(uunit,n)?uunit[n]:null;
- if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.o=PRE[ov];r.tag={};r.c=null;r.d=1;r.s=''}
+ if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.st=DSTEP[ov];r.c=null;r.d=1;r.s=''}
+ if(Object.prototype.hasOwnProperty.call(ustep,n))r.st=ustep[n];
  return r}
-function unitChoices(n){var k=itemKey(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons']];
+function unitChoices(n){var k=itemKey(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons'],['tsp','teaspoons']];
  if(k&&ITEMS[k].t==='count')l.push(['count',ITEMS[k].p]);return l}
 function calOf(n){if(Object.prototype.hasOwnProperty.call(ucal,n))return ucal[n];var c=unitOf(n).c;return c===undefined?null:c}
 function frac(n){var w=Math.floor(n+1e-9),r=n-w,m={'0.25':'¼','0.5':'½','0.75':'¾'},s='';
@@ -232,11 +233,6 @@ function frac(n){var w=Math.floor(n+1e-9),r=n-w,m={'0.25':'¼','0.5':'½','0.75'
 function unitWord(q,n){var u=unitOf(n);return q>1?u.p:u.u}
 function fmtQ(q,n){return frac(q)+' '+unitWord(q,n)}
 function amtText(e){if(e.q!==undefined&&e.q!==null&&!isNaN(e.q))return frac(e.q)+' '+(e.un||unitWord(e.q,e.x));return e.a?String(e.a):''}
-function parseQty(s){s=String(s).trim().replace(/½/g,' 1/2').replace(/¼/g,' 1/4').replace(/¾/g,' 3/4').trim();if(!s)return null;
- var p=s.split(/\s+/),t=0;
- for(var i=0;i<p.length;i++){var m=p[i].match(/^(\d+)\/(\d+)$/);
-  if(m){if(+m[2]===0)return null;t+=(+m[1])/(+m[2])}else if(/^(\d+\.?\d*|\.\d+)$/.test(p[i]))t+=parseFloat(p[i]);else return null}
- return (t>0&&t<=50)?Math.round(t*100)/100:null}
 function logCal(log){var t=0,miss=0;log.forEach(function(e){if(e.k!=='ate')return;var c=calOf(e.x);if(c===null||c===undefined)miss++;else t+=c*((e.q!==undefined&&e.q!==null)?e.q:unitOf(e.x).d)});return {t:Math.round(t),miss:miss}}
 function defaultFoods(){return FOODS.map(function(g){return {n:g[0],c:g[1],l:g[2],items:g[3].slice()}})}
 function loadFoods(){var d=defaultFoods();var s=rd('pa-foods');try{s=s?JSON.parse(s):null}catch(e){s=null}
@@ -257,7 +253,7 @@ function save(){wr('pa-log-'+date,JSON.stringify(day))}
 /* ---------- state ---------- */
 function ds(dt){return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2)}
 var today=ds(new Date());
-var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),pickFood='',showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null;
+var date=today,day=load(date),cfg=settings(),foods=loadFoods(),acts=loadActs(),ucal=loadCal(),uunit=loadUnits(),ustep=loadSteps(),showFood=rd('pa-showfood')!=='0',showCal=rd('pa-showcal')==='1',addTime='',pickSize='',resetArm=false,clrArm=false,actArm=false,keepAct=false,undoX=null;
 function pad(n){return ('0'+n).slice(-2)}
 function nowT(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())}
 function period(t){var h=parseInt(t.split(':')[0],10);return h<12?'Morning':(h<17?'Afternoon':'Evening')}
@@ -312,7 +308,6 @@ function addDid(name,c){
  save();render();toast('Added: '+name+' ('+c+')');
 }
 function act(a,v){
- if(a!=='fpick'&&a!=='fother'&&a!=='fqty')pickFood='';
  if(a!=='resetfoods')resetArm=false;if(a!=='cleartoday')clrArm=false;if(a!=='resetacts')actArm=false;
  if(a==='prev'){shift(-1)}
  else if(a==='next'){shift(1)}
@@ -332,46 +327,47 @@ function act(a,v){
  else if(a==='energy'){var q=v.split('|');var cur=day.energy[q[0]];day.energy[q[0]]=(cur===parseInt(q[1],10)?null:parseInt(q[1],10));save()}
  else if(a==='crash'){day.crash=(day.crash===v?null:v);save()}
  else if(a==='size'){pickSize=(pickSize===v?'':v)}
- else if(a==='fpick'){pickFood=(pickFood===v?'':v)}
- else if(a==='fqty'||a==='fother'){
-  if(!pickFood){render();return}
-  var fq=parseFloat(v);
-  if(a==='fother'){fq=parseQty((document.getElementById('fother')||{}).value||'');if(fq===null){toast('Type a number, like 1.5 or 1/3');return}}
-  if(isNaN(fq)||fq<=0){return}
-  var fnm=pickFood,fun=unitWord(fq,fnm);pickFood='';
-  day.log.push({k:'ate',t:(date===today)?nowT():(addTime||'12:00'),x:fnm,q:fq,un:fun});save();render();toast('Added: '+fnm+', '+frac(fq)+' '+fun);return}
+ else if(a==='fplus'){var pn=v,pst=unitOf(pn).st,lastE=null;
+  for(var z=day.log.length-1;z>=0;z--){if(day.log[z].k==='ate'&&day.log[z].x===pn){lastE=day.log[z];break}}
+  var agoM=lastE?(function(){var pp=(lastE.lt||lastE.t).split(':'),nw=new Date();return nw.getHours()*60+nw.getMinutes()-(+pp[0]*60+ +pp[1])})():999;
+  if(lastE&&lastE.q!==undefined&&lastE.q!==null&&(date!==today||(agoM>=0&&agoM<=20))){lastE.q=Math.round((lastE.q+pst)*100)/100;lastE.un=unitWord(lastE.q,pn);if(date===today)lastE.lt=nowT()}
+  else{var ne={k:'ate',t:(date===today)?nowT():(addTime||'12:00'),x:pn,q:pst,un:unitWord(pst,pn)};day.log.push(ne)}
+  save();render();return}
  else if(a==='addate'){
   var tx=(document.getElementById('atext')||{}).value||'';var tm=(date===today)?nowT():'12:00';
   var am=((document.getElementById('aamt')||{}).value||'').trim();
   if(!tx.trim()){toast('Type what you ate');return}
   var cn=foodCanon(tx.trim());
-  if(cn){pickFood=cn;render();toast('That one has a button. Pick how much.');return}
+  if(cn){toast('That one already has a button. Tap its + above.');return}
   var en={k:'ate',t:tm,x:tx.trim()};if(am)en.a=am;day.log.push(en);save();
  }
- else if(a==='foodminus'){for(var q2=day.log.length-1;q2>=0;q2--){if(day.log[q2].k==='ate'&&day.log[q2].x===v){undoItem={e:day.log[q2],i:q2,d:date};day.log.splice(q2,1);break}}save();render();toast('Took one off: '+v,true);return}
+ else if(a==='foodminus'){var mi=-1;for(var q2=day.log.length-1;q2>=0;q2--){if(day.log[q2].k==='ate'&&day.log[q2].x===v){mi=q2;break}}
+  if(mi>=0){undoX={t:'log',d:date,v:JSON.parse(JSON.stringify(day.log))};var me=day.log[mi],mst=unitOf(v).st;
+   if(me.q!==undefined&&me.q!==null&&me.q-mst>0.001){me.q=Math.round((me.q-mst)*100)/100;me.un=unitWord(me.q,v)}else day.log.splice(mi,1)}
+  save();render();toast('Took off: '+fmtQ(unitOf(v).st,v)+' '+v,'undox');return}
  else if(a==='keepfood'){var kn=((document.getElementById('atext')||{}).value||'').trim();if(!kn){toast('Type what you ate');return}
   var kg=parseInt((document.getElementById('keepgrp')||{}).value,10)||0;var ex=foodCanon(kn);
-  if(ex){pickFood=ex;render();toast('That one has a button. Pick how much.');return}
+  if(ex){toast('That one already has a button. Tap its + above.');return}
   var kam=((document.getElementById('aamt')||{}).value||'').trim();
   foods[kg].items.push(kn);saveFoods();
   var ke={k:'ate',t:(date===today)?nowT():(addTime||'12:00'),x:kn};if(kam)ke.a=kam;
   day.log.push(ke);save();render();toast('Added, and kept as a button: '+kn);return}
  else if(a==='addfood'){var an=((document.getElementById('newfood')||{}).value||'').trim();if(!an){toast('Type the name first');return}
   if(foodCanon(an)){toast('That button is already there');return}
-  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();var au=(document.getElementById('newunit')||{}).value;if(au==='cup'||au==='oz'||au==='tbsp'){uunit[an]=au;saveUnits()}render();toast('Button added: '+an);return}
+  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();var au=(document.getElementById('newunit')||{}).value;if(au==='cup'||au==='oz'||au==='tbsp'||au==='tsp'){uunit[an]=au;saveUnits()}render();toast('Button added: '+an);return}
  else if(a==='fdel'){var fp=v.split('|'),fg=+fp[0],fi=+fp[1],fn=foods[fg].items[fi];foods[fg].items.splice(fi,1);saveFoods();undoX={t:'food',g:fg,i:fi,v:fn};render();toast('Removed button: '+fn,'undox');return}
  else if(a==='fup'||a==='fdn'){var mp=v.split('|'),mg=+mp[0],mi=+mp[1],mj=(a==='fup')?mi-1:mi+1,arr=foods[mg].items;if(mj>=0&&mj<arr.length){var tmp=arr[mi];arr[mi]=arr[mj];arr[mj]=tmp;saveFoods()}}
  else if(a==='addact'){var nn=((document.getElementById('newact')||{}).value||'').trim().replace(/\|/g,'/');if(!nn){toast('Type the name first');return}
   if(acts.some(function(x){return x[0].toLowerCase()===nn.toLowerCase()})){toast('That one is already there');return}
   acts.push([nn,parseInt((document.getElementById('newactc')||{}).value,10)||0]);saveActs();render();toast('Added: '+nn);return}
  else if(a==='adel'){var ai=parseInt(v,10),rem=acts.splice(ai,1)[0];saveActs();undoX={t:'act',i:ai,v:rem};render();toast('Removed: '+rem[0],'undox');return}
- else if(a==='undox'){if(undoX){if(undoX.t==='acts'){acts=undoX.v;saveActs()}else if(undoX.t==='reset'){foods=undoX.f;saveFoods();ucal=undoX.c;saveCal();uunit=undoX.u;saveUnits()}else if(undoX.t==='clear'){if(undoX.d===date){day=undoX.v;save()}else{wr('pa-log-'+undoX.d,JSON.stringify(undoX.v))}}else if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
+ else if(a==='undox'){if(undoX){if(undoX.t==='acts'){acts=undoX.v;saveActs()}else if(undoX.t==='reset'){foods=undoX.f;saveFoods();ucal=undoX.c;saveCal();uunit=undoX.u;saveUnits();ustep=undoX.s;saveSteps()}else if(undoX.t==='log'){if(undoX.d===date){day.log=undoX.v;save()}}else if(undoX.t==='clear'){if(undoX.d===date){day=undoX.v;save()}else{wr('pa-log-'+undoX.d,JSON.stringify(undoX.v))}}else if(undoX.t==='food'){foods[undoX.g].items.splice(Math.min(undoX.i,foods[undoX.g].items.length),0,undoX.v);saveFoods()}else{acts.splice(Math.min(undoX.i,acts.length),0,undoX.v);saveActs()}}undoX=null;clearToasts()}
  else if(a==='keepact'){keepAct=!keepAct}
  else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to remove all your own activities');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=[];saveActs();render();toast('Your own activities are removed','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
  else if(a==='togcal'){showCal=!showCal;wr('pa-showcal',showCal?'1':'0')}
- else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;undoX={t:'reset',f:JSON.parse(JSON.stringify(foods)),c:JSON.parse(JSON.stringify(ucal)),u:JSON.parse(JSON.stringify(uunit))};foods=defaultFoods();saveFoods();ucal={};saveCal();uunit={};saveUnits();render();toast('Original buttons are back','undox');return}
+ else if(a==='resetfoods'){if(!resetArm){resetArm=true;render();toast('Tap the button again to put the original buttons back');return}resetArm=false;undoX={t:'reset',f:JSON.parse(JSON.stringify(foods)),c:JSON.parse(JSON.stringify(ucal)),u:JSON.parse(JSON.stringify(uunit)),s:JSON.parse(JSON.stringify(ustep))};foods=defaultFoods();saveFoods();ucal={};saveCal();uunit={};saveUnits();ustep={};saveSteps();render();toast('Original buttons are back','undox');return}
  else if(a==='stepH'){var f=v.split('|');var cur2=parseFloat(day[f[0]]);if(isNaN(cur2))cur2=(f[0]==='sleepH'?7:0);cur2=Math.max(0,Math.min(24,cur2+parseFloat(f[1])));day[f[0]]=String(cur2);save()}
  else if(a==='clearH'){day[v]='';save()}
  else if(a==='cfg'){var x=v.split('|');cfg[x[0]]=Math.max(1,cfg[x[0]]+parseInt(x[1],10));saveSettings(cfg)}
@@ -505,34 +501,23 @@ function render(){
  h+='</div>';
  /* ate */
  if(showFood){
- h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food, then tap how much. Tap the − on the left to take the last one off.</small></h2>';
+h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food to add the amount shown. Tap the \u2212 to take that amount back off.</small></h2>';
  foods.forEach(function(g){
   if(!g.items.length)return;
   var gst='--k:'+g.c+';--kl:'+g.l+';--kt:#fff';
-  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid">';
-  g.items.forEach(function(n,ix){
-   var ents=day.log.filter(function(e){return e.k==='ate'&&e.x===n}),c=ents.length,u=unitOf(n);
-   var qs=0,anyq=false;ents.forEach(function(e){if(e.q!==undefined&&e.q!==null){qs+=e.q;anyq=true}});
-   var sub=anyq?'so far: '+fmtQ(Math.round(qs*100)/100,n):'by the '+u.u;
-   h+='<div class="fb" style="'+gst+'">'
-    +(c?'<button class="fm" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take the last '+esc(n)+' off">−</button>':'')
-    +'<button class="fn'+(c?'':' fn0')+'" data-a="fpick" data-v="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+esc(sub)+'</small></button>'
-    +'<button class="fp" data-a="fpick" data-v="'+esc(n)+'" aria-label="Pick an amount of '+esc(n)+'">'+(c?'<b>'+c+'</b>':'<em>+</em>')+'</button></div>';
-   if((ix%2===1||ix===g.items.length-1)&&pickFood){
-    var rowItems=g.items.slice(ix-(ix%2),ix+1);
-    if(rowItems.indexOf(pickFood)>=0){
-     var pu=unitOf(pickFood),pc=showCal?calOf(pickFood):null;
-     h+='<div class="pk" style="'+gst+'"><div class="pkh"><span>How much '+esc(pickFood)+'?</span><button class="small" data-a="fpick" data-v="'+esc(pickFood)+'">Close</button></div><div class="pkg">'
-      +pu.o.map(function(q){var tg=pu.tag[q]||'';var cl=(pc!==null&&pc!==undefined)?Math.round(pc*q)+' cal':'';
-       return '<button class="pkb" data-a="fqty" data-v="'+q+'"><span>'+frac(q)+' '+(q>1?pu.p:pu.u)+'</span>'+(tg?'<small>'+esc(tg)+'</small>':'')+(cl?'<small>'+cl+'</small>':'')+'</button>'}).join('')
-      +'</div><div class="row"><input type="text" inputmode="decimal" id="fother" placeholder="other, in '+esc(pu.p)+' (like 2.5 or 1/3)" aria-label="Other amount"><button class="small" data-a="fother">Add</button></div></div>';
-    }
-   }
-  });
-  h+='</div>';
+  h+='<div class="tier" style="--k:'+g.c+';--kt:#fff">'+g.n+'</div><div class="qgrid">'+g.items.map(function(n){
+   var u=unitOf(n),tot=0,has=false;
+   day.log.forEach(function(e){if(e.k==='ate'&&e.x===n){has=true;tot+=(e.q!==undefined&&e.q!==null)?e.q:u.d}});
+   var cal=showCal?calOf(n):null;
+   var sub='+'+fmtQ(u.st,n)+((cal!==null&&cal!==undefined)?' \u00B7 '+Math.round(cal*u.st)+' cal':'');
+   return '<div class="fb" style="'+gst+'">'
+    +(has?'<button class="fm" data-a="foodminus" data-v="'+esc(n)+'" aria-label="Take '+esc(fmtQ(u.st,n))+' of '+esc(n)+' off">\u2212</button>':'')
+    +'<button class="fn'+(has?'':' fn0')+'" data-a="fplus" data-v="'+esc(n)+'"><span>'+esc(n)+'</span><small>'+esc(sub)+'</small></button>'
+    +'<button class="fp'+(has?' tt':'')+'" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'">'+(has?'<i>'+esc(fmtQ(Math.round(tot*100)/100,n))+'</i>':'<em>+</em>')+'</button></div>';
+  }).join('')+'</div>';
  });
- if(showCal){var lc=logCal(day.log);h+='<div class="hint" style="margin-top:8px">'+(lc.t?'About <b>'+lc.t+'</b> calories so far today (rough guess).':'No calories counted yet.')+(lc.miss?' '+lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number.':'')+'</div>'}
- h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div><div class="row"><input type="text" id="aamt" placeholder="how much, like 2 slices or ½ cup"></div>';
+  if(showCal){var lc=logCal(day.log);h+='<div class="hint" style="margin-top:8px">'+(lc.t?'About <b>'+lc.t+'</b> calories so far today (rough guess).':'No calories counted yet.')+(lc.miss?' '+lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number.':'')+'</div>'}
+ h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div><div class="row"><input type="text" id="aamt" placeholder="how much, like 2 oz or ½ cup"></div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Keep it under</span><select class="pick" id="keepgrp">'+foods.map(function(g,k){return '<option value="'+k+'">'+g.n+'</option>'}).join('')+'</select></div>';
  h+='<button class="big pale" data-a="addate">Add this once</button><button class="big" data-a="keepfood">Add it and keep it as a button</button></div>';
  }
@@ -588,12 +573,13 @@ function render(){
     +'<button class="small" data-a="fup" data-v="'+gi+'|'+ii+'" aria-label="Move up">↑</button><button class="small" data-a="fdn" data-v="'+gi+'|'+ii+'" aria-label="Move down">↓</button>'
     +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div>'
     +'<div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" data-ed="funit" data-g="'+gi+'" data-i="'+ii+'" aria-label="Measured in">'+unitChoices(n).map(function(t){return '<option value="'+t[0]+'"'+(unitOf(n).t===t[0]?' selected':'')+'>'+t[1]+'</option>'}).join('')+'</select></div>'
+    +'<div class="row"><span class="lbl" style="width:auto">Each tap adds</span><select class="pick" data-ed="fstep" data-g="'+gi+'" data-i="'+ii+'" aria-label="Each tap adds">'+(STEPS.indexOf(unitOf(n).st)<0?STEPS.concat([unitOf(n).st]):STEPS).map(function(sv){return '<option value="'+sv+'"'+(unitOf(n).st===sv?' selected':'')+'>'+frac(sv)+' '+(sv>1?unitOf(n).p:unitOf(n).u)+'</option>'}).join('')+'</select></div>'
     +'<div class="row"><span class="lbl" style="width:auto">Calories per '+esc(unitOf(n).u)+'</span><input type="text" inputmode="numeric" class="calin" data-ed="fcal" data-g="'+gi+'" data-i="'+ii+'" value="'+(calOf(n)===null||calOf(n)===undefined?'':Math.round(calOf(n)))+'" placeholder="none" aria-label="Calories per unit"></div>'
     +((unitOf(n).s&&!Object.prototype.hasOwnProperty.call(ucal,n))?'<div class="hint">Source: '+esc(unitOf(n).s)+'.</div>':'')+'</div>';
   });
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
- h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+unitChoices('').map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div><div class="hint">Cups for things like salad, soup or rice. Ounces for meat or cheese. Tablespoons for dressing or peanut butter.</div>';
+ h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+unitChoices('').map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div><div class="hint">Cups for salad, soup or rice. Ounces for meat or cheese. Tablespoons for dressing or peanut butter. Teaspoons for oil or sugar.</div>';
  h+='</details><details class="sub2"><summary>My own activities</summary>';
  if(!acts.length)h+='<div class="hint">None yet. Add one below, or use "Keep it as a button" under Something else in the activity box.</div>';
  acts.forEach(function(a,ai){
@@ -641,7 +627,7 @@ document.addEventListener('change',function(ev){
   if(old===undefined||!nm||nm===old){render();return}
   var ex=foodCanon(nm);
   if(ex&&ex.toLowerCase()!==old.toLowerCase()){toast('That name is already used');render();return}
-  var oc=calOf(old),ot=unitOf(old).t;foods[g].items[i]=nm;saveFoods();uunit[nm]=ot;delete uunit[old];saveUnits();if(oc!==null&&oc!==undefined){ucal[nm]=oc;saveCal()}
+  var oc=calOf(old),ot=unitOf(old).t,ost=unitOf(old).st;foods[g].items[i]=nm;saveFoods();uunit[nm]=ot;delete uunit[old];ustep[nm]=ost;delete ustep[old];saveUnits();saveSteps();if(oc!==null&&oc!==undefined){ucal[nm]=oc;saveCal()}
   day.log.forEach(function(e){if(e.k==='ate'&&e.x===old)e.x=nm});save();
   render();toast('Renamed');
  }else if(ed==='fcal'){
@@ -650,7 +636,11 @@ document.addEventListener('change',function(ev){
   render();
  }else if(ed==='funit'){
   var un=foods[g]&&foods[g].items[i];
-  if(un!==undefined&&TLBL[t.value]&&unitOf(un).t!==t.value){uunit[un]=t.value;delete ucal[un];saveUnits();saveCal();toast('Now measured in '+(unitOf(un).p)+'. Check the calories.')}
+  if(un!==undefined&&TLBL[t.value]&&unitOf(un).t!==t.value){uunit[un]=t.value;delete ucal[un];delete ustep[un];saveUnits();saveCal();saveSteps();toast('Now measured in '+(unitOf(un).p)+'. Check the calories.')}
+  render();
+ }else if(ed==='fstep'){
+  var sn=foods[g]&&foods[g].items[i],sv=parseFloat(t.value);
+  if(sn!==undefined&&sv>0){ustep[sn]=sv;saveSteps()}
   render();
  }else if(ed==='fgrp'){
   var to=parseInt(t.value,10);
