@@ -160,19 +160,20 @@ var MENU=[
 ];
 var QUICK=[['Snack',1],['Ride, 1 hour',1],['Seated tai chi',1],['10-minute walk',2],['Shower',2],['Standing tai chi',2],['Lymphatic flush',2],['Weights',3],['Store run',4],['Far appointment',7]];
 /* Pa's usual foods: edit the names here to add or change a button */
-var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Apple','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
+var FOODS=[['Food','#26804a','#e1f0e4',['Eggs','Jimmy Dean sausage','Greek yogurt','Cheese','Nuts','Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)','Banana','Strawberries','Celery']],['Drinks','#2b7fb0','#dcecf5',['Pepsi','Coke','H-E-B Cola','2% milk','Hot cocoa (Keurig)']],['Sweets','#8e2a55','#f2d3e0',['Truffle chocolates']]];
 /* How each food is measured. t = cup, oz, tbsp or count. c = rough calories in ONE unit. d = the amount one old single tap meant (used for days logged before amounts existed).
    o = amounts shown as buttons (leave out to use the standard set for that unit). s = where the number came from. Editable in Make it yours. */
 var NOUN={cup:['cup','cups'],oz:['oz','oz'],tbsp:['tbsp','tbsp'],count:['piece','pieces']};
-var TLBL={cup:'cups',oz:'ounces',tbsp:'tablespoons',count:'pieces or servings'};
+var TLBL={cup:'cups',oz:'ounces',tbsp:'tablespoons',count:'whole pieces (like eggs or apples)'};
 var PRE={cup:[0.25,0.5,0.75,1,1.5,2],oz:[0.5,1,2,3,4],tbsp:[1,2,3,4],count:[1,2,3,4]};
+var APPLES=['Gala apple','Pink Lady apple','Honeycrisp apple','Fuji apple','Granny Smith apple','Red Delicious apple','Golden Delicious apple','Apple (other)'];
 var ITEMS={
  'Eggs':{t:'count',u:'egg',p:'eggs',c:70,d:1,o:[1,2,3,4],s:'1 large egg, typical value'},
  'Jimmy Dean sausage':{t:'count',u:'link',p:'links',c:73.3,d:3,o:[1,2,3,4,5,6],s:'Jimmy Dean label, 3 cooked original links = 220'},
  'Greek yogurt':{t:'cup',c:133.3,d:0.75,s:'H-E-B nonfat plain label, 3/4 cup = 100. Whole milk would be 210 per 3/4 cup'},
  'Cheese':{t:'oz',c:110,d:1,s:'sharp cheddar, typical value'},
  'Nuts':{t:'cup',c:810,d:0.25,o:[0.25,0.5,0.75,1],s:'mixed nuts, typical value, about 200 per 1/4 cup. Check your brand'},
- 'Apple':{t:'count',u:'apple',p:'apples',c:95,d:1,o:[0.5,1,2],s:'1 medium, typical value'},
+ 'Apple':{t:'count',u:'apple',p:'apples',c:95,d:1,o:[0.5,1,2],s:'1 medium apple, typical value'},
  'Banana':{t:'count',u:'banana',p:'bananas',c:105,d:1,o:[0.5,1,2],s:'1 medium, typical value'},
  'Strawberries':{t:'cup',c:50,d:1,s:'typical value'},
  'Celery':{t:'count',u:'stalk',p:'stalks',c:10,d:1,o:[1,2,3,4],s:'typical value'},
@@ -183,6 +184,7 @@ var ITEMS={
  'Hot cocoa (Keurig)':{t:'cup',c:80,d:1,s:'a guess, depends on the brand'},
  'Truffle chocolates':{t:'count',u:'piece',p:'pieces',c:53,d:1,o:[1,2,3,4],s:'Central Market label, 210 per 4 pieces'}
 };
+APPLES.forEach(function(n){ITEMS[n]={t:'count',u:'apple',p:'apples',c:95,d:1,o:[0.5,1,2],s:'1 medium apple (about 3 inches across). Varieties differ by roughly 10 calories, so this is a typical value'}});
 var SIZES=['bites','handful','bowl','plate'];
 var EYES=['Fine','Heavy','Red','Watery'];
 var PAIN=[['#26804a','#fff'],['#3f8a32','#fff'],['#8cbc3c','#2b2420'],['#b9c230','#2b2420'],['#e0c42a','#2b2420'],['#f2b51f','#2b2420'],['#f29a1d','#2b2420'],['#ee7a1f','#2b2420'],['#e4552a','#fff'],['#d33a2c','#fff'],['#b3202f','#fff']];
@@ -215,7 +217,7 @@ function loadUnits(){var r=rd('pa-units'),q;try{q=r?JSON.parse(r):{}}catch(e){q=
  if(!q||typeof q!=='object'||Array.isArray(q))return {};
  var o={};for(var k in q){if(typeof q[k]==='string'&&TLBL[q[k]])o[k]=q[k]}return o}
 function saveUnits(){wr('pa-units',JSON.stringify(uunit))}
-function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:{t:'count',u:'serving',p:'servings',c:null,d:1};
+function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:{t:'count',u:'piece',p:'pieces',c:null,d:1};
  var r={t:b.t,u:b.u||NOUN[b.t][0],p:b.p||NOUN[b.t][1],c:b.c,d:b.d,o:b.o||PRE[b.t],tag:b.tag||{},s:b.s||''};
  var ov=Object.prototype.hasOwnProperty.call(uunit,n)?uunit[n]:null;
  if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.o=PRE[ov];r.tag={};r.c=null;r.d=1;r.s=''}
@@ -354,7 +356,7 @@ function act(a,v){
   day.log.push(ke);save();render();toast('Added, and kept as a button: '+kn);return}
  else if(a==='addfood'){var an=((document.getElementById('newfood')||{}).value||'').trim();if(!an){toast('Type the name first');return}
   if(foodCanon(an)){toast('That button is already there');return}
-  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();render();toast('Button added: '+an);return}
+  var ag=parseInt((document.getElementById('newgrp')||{}).value,10)||0;foods[ag].items.push(an);saveFoods();var au=(document.getElementById('newunit')||{}).value;if(TLBL[au]){uunit[an]=au;saveUnits()}render();toast('Button added: '+an);return}
  else if(a==='fdel'){var fp=v.split('|'),fg=+fp[0],fi=+fp[1],fn=foods[fg].items[fi];foods[fg].items.splice(fi,1);saveFoods();undoX={t:'food',g:fg,i:fi,v:fn};render();toast('Removed button: '+fn,'undox');return}
  else if(a==='fup'||a==='fdn'){var mp=v.split('|'),mg=+mp[0],mi=+mp[1],mj=(a==='fup')?mi-1:mi+1,arr=foods[mg].items;if(mj>=0&&mj<arr.length){var tmp=arr[mi];arr[mi]=arr[mj];arr[mj]=tmp;saveFoods()}}
  else if(a==='addact'){var nn=((document.getElementById('newact')||{}).value||'').trim().replace(/\|/g,'/');if(!nn){toast('Type the name first');return}
@@ -589,7 +591,7 @@ function render(){
   });
  });
  h+='<div class="tier" style="--k:#2f6b35;--kt:#fff">Add a button</div><div class="row"><input type="text" id="newfood" placeholder="name of the food or drink"></div>';
- h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select><button class="small" data-a="addfood">Add button</button></div>';
+ h+='<div class="row"><select class="pick" id="newgrp">'+grpOpts(0)+'</select></div><div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" id="newunit">'+Object.keys(TLBL).map(function(t){return '<option value="'+t+'">'+TLBL[t]+'</option>'}).join('')+'</select><button class="small" data-a="addfood">Add button</button></div>';
  h+='</details><details class="sub2"><summary>My own activities</summary>';
  if(!acts.length)h+='<div class="hint">None yet. Add one below, or use "Keep it as a button" under Something else in the activity box.</div>';
  acts.forEach(function(a,ai){
