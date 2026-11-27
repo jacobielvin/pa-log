@@ -146,6 +146,8 @@ footer{text-align:center;color:#ffe9a0;margin:14px 0;font-size:.9rem}
 .cbars{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;height:120px;align-items:end;margin:8px 0 2px;border-bottom:2px solid #b9a98f}
 .cbars .cb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
 .cbars .cb i{display:block;width:70%;border-radius:6px 6px 0 0;background:#2e7d4f}
+.cbars .cb.sel{background:#fff;outline:3px solid #2b2420;outline-offset:-1px;border-radius:8px}
+.cbars .cb i.part{opacity:.45}
 .cbars .cb i.over{background:#d9822b}
 .cbars .tl{position:absolute;left:0;right:0;border-top:2px dashed #5a4a3a;pointer-events:none}
 .cbars .tl span{position:absolute;right:0;top:-1.3em;font-size:.75rem;font-weight:800;background:#fffaf0;padding:0 3px;color:#4a3d30}
@@ -239,6 +241,7 @@ function wr(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
 function settings(){var s=rd('pa-settings');try{s=s?JSON.parse(s):null}catch(e){s=null}
  return s&&s.R?s:{R:3,Y:6,G:10}}
 function saveSettings(s){wr('pa-settings',JSON.stringify(s))}
+function fn(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
 function getTarget(){var t=parseInt(rd('pa-target'),10);return (t>=800&&t<=4000)?t:2300}
 /* food buttons and own activities: saved on this phone; bad data falls back to the originals */
 /* calories are now saved per unit (per oz, per cup...). Older saves were per tap, so they are converted once. */
@@ -445,7 +448,7 @@ function act(a,v){
 
 /* ---------- render ---------- */
 function chips(list,cur,action,cmap,lvl,grp){var ci=lvl?list.indexOf(cur):-1;return list.map(function(x,i){var on=Array.isArray(cur)?cur.indexOf(x)>=0:cur===x;var c=(lvl&&ci>=0&&i<ci)?' lv':'';var st=cmap?' style="'+cs(cmap[i])+'"':'';return '<button class="chip'+c+(on?' on':'')+'"'+st+' data-a="'+action+'" data-v="'+esc(x)+'"'+(grp?' data-g="'+grp+'" data-i="'+i+'"':'')+'>'+esc(x)+'</button>'}).join('')}
-function stepper(field,unit){var v=day[field];return '<span class="stepper"><button data-a="stepH" data-v="'+field+'|-0.5">−</button><span>'+(v===''?'—':esc(v)+' '+unit)+'</span><button data-a="stepH" data-v="'+field+'|0.5">+</button>'+(v!==''?'<button data-a="clearH" data-v="'+field+'" title="clear" style="font-size:.8rem">✕</button>':'')+'</span>'}
+function stepper(field,unit){var v=day[field];return '<span class="stepper"><button data-a="stepH" data-v="'+field+'|-0.5">−</button><span>'+(v===''?'—':esc(v)+' '+(parseFloat(v)===1?unit.replace(/s$/,''):unit))+'</span><button data-a="stepH" data-v="'+field+'|0.5">+</button>'+(v!==''?'<button data-a="clearH" data-v="'+field+'" title="clear" style="font-size:.8rem">✕</button>':'')+'</span>'}
 function entryHtml(e,idx){var st=e.k==='did'?ts(e.c||0):'--k:#8e2a55;--kt:#fff';return '<div class="entry" style="'+st+'"><span class="t">'+esc(e.t)+'</span><span class="tx">'+(e.k==='ate'?'🍽️ Ate: ':'⭐ ')+esc(e.x)+(e.k==='ate'&&amtText(e)?', '+esc(amtText(e)):'')+'</span>'+(e.k==='did'?'<span class="cc">'+e.c+'</span>':'')+'<button class="rm" data-a="rm" data-v="'+idx+'" aria-label="Remove">✕</button></div>'}
 /* ---------- week dashboard ---------- */
 var PCOL={R:['#c0392b','#fff'],Y:['#f0c24d','#2b2420'],G:['#2f7d46','#fff']};
@@ -488,7 +491,7 @@ function dashHtml(){
  });
  if(showFood&&showCal){
   var tg2=getTarget(),cv=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}),mx=Math.max(tg2*1.25,Math.max.apply(null,cv));
-  h+='<div class="dt2">Calories vs target (rough guess)</div><div class="cbars">'+days.map(function(x,i){var v=cv[i];return '<div class="cb" data-a="open" data-v="'+x.d+'" role="button">'+(v?'<i class="'+(v>tg2?'over':'')+'" style="height:'+Math.round(v/mx*100)+'%"></i>':'')+'</div>'}).join('')+'<div class="tl" style="bottom:'+Math.round(tg2/mx*100)+'%"><span>'+tg2+'</span></div></div><div class="clab">'+days.map(function(x,i){return '<span>'+wdn(x.d).w+'<small>'+(cv[i]||'\u2013')+'</small></span>'}).join('')+'</div><div class="hint">Green is at or under the target. Orange is over.</div>'}
+  h+='<div class="dt2">Calories vs target (rough guess)</div><div class="cbars">'+days.map(function(x,i){var v=cv[i];return '<div class="cb'+(x.d===date?' sel':'')+'" data-a="open" data-v="'+x.d+'" role="button">'+(v?'<i class="'+(v>tg2?'over':'')+(x.d===today?' part':'')+'" style="height:'+Math.round(v/mx*100)+'%"></i>':'')+'</div>'}).join('')+'<div class="tl" style="bottom:'+Math.round(tg2/mx*100)+'%"><span>'+fn(tg2)+'</span></div></div><div class="clab">'+days.map(function(x,i){return '<span>'+wdn(x.d).w+'<small>'+(cv[i]?fn(cv[i]):'\u2013')+(days[i].d===today&&cv[i]?'<br>so far':'')+'</small></span>'}).join('')+'</div><div class="hint">Green is at or under the target. Orange is over.</div>'}
  h+=row('Crash','',function(x){
   var c=x.o.crash;
   if(c==='Yes')return '<span class="cr y"><b>✕</b><br><small>Crash</small></span>';
@@ -514,7 +517,7 @@ function dashHtml(){
  var nps=days.filter(function(x){return x.np!==null&&x.np>0}).map(function(x){return x.np});
  if(nps.length)L.push('Naps: <b>'+nps.length+' of 7 days</b> \u00B7 average <b>'+fmt1(mean(nps))+' hours</b> on those days');
  if(sls.length&&nps.length){var tots=days.filter(function(x){return x.sl!==null}).map(function(x){return x.sl+(x.np||0)});L.push('Average night plus nap: <b>'+fmt1(mean(tots))+' hours</b> a day')}
- if(showFood&&showCal){var cls=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}).filter(function(v){return v>0});if(cls.length){var av=Math.round(mean(cls)),t3=getTarget();L.push('Average calories on days with food logged: <b>'+av+'</b> (rough guess)');L.push('Days at or under the '+t3+' target: <b>'+cls.filter(function(v){return v<=t3}).length+' of '+cls.length+'</b> \u00B7 average is '+Math.abs(av-t3)+(av<=t3?' under':' over')+' the target')}}
+ if(showFood&&showCal){var cls=days.map(function(x){return x.o.log.some(function(e){return e.k==='ate'})?logCal(x.o.log).t:0}).filter(function(v){return v>0});if(cls.length){var av=Math.round(mean(cls)),t3=getTarget();L.push('Average calories on days with food logged: <b>'+fn(av)+'</b> (rough guess)');L.push('Days at or under the '+fn(t3)+' target: <b>'+cls.filter(function(v){return v<=t3}).length+' of '+cls.length+'</b> \u00B7 average is '+fn(Math.abs(av-t3))+(av<=t3?' under':' over')+' the target')}}
  if(streak>0)L.push('Days in a row with no crash: <b>'+streak+'</b>');
  h+='<ul class="dsum">'+L.map(function(t){return '<li>'+t+'</li>'}).join('');
  if(crashes>=2)h+='<li class="nudge">'+crashes+' crashes this week. The plan says take 1 coin off each color. The Coin numbers box near the bottom does that.</li>';
@@ -535,6 +538,7 @@ function render(){
   h+='<div class="left">'+lf+' coin'+(lf===1?'':'s')+' left <small>('+sp+' spent of '+tot+')</small></div>';
   if(lf===0&&sp>0)h+='<div class="done">The coins are gone. The day is done. Rest.</div>';
  }else{h+='<div class="left" style="margin-top:8px">Pick today\'s color</div><div class="hint">Feel different at lunch? Tap another color. What you spent stays crossed off.</div>'}
+ if(showFood&&showCal){var bl=getTarget()-logCal(day.log).t;h+='<div class="left" style="margin-top:4px">'+(bl>=0?fn(bl)+' calories left':fn(-bl)+' calories over')+' <small>(rough guess)</small></div>'}
  h+='</div>';
  /* check-in */
  h+='<div class="card" style="--ac:#c0392b"><h2>How are you?</h2>';
@@ -574,6 +578,11 @@ function render(){
  /* ate */
  if(showFood){
 h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food to add the amount shown. Tap the \u2212 to take that amount back off.</small></h2>';
+var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=Math.min(100,Math.round(lc.t/tg*100));
+   calTop+='<div class="tg"><div><b>'+fn(tg)+'</b><small>Target</small></div><div><b>'+fn(lc.t)+(lc.miss?'+':'')+'</b><small>Eaten</small></div><div class="lf'+(lft<0?' over':'')+'"><b>'+fn(Math.abs(lft))+'</b><small>'+(lft<0?'Over':'Left')+'</small></div></div>'
+   +'<div class="pbar'+(lft<0?' over':'')+'" role="img" aria-label="'+pc+' percent of the target"><i style="width:'+pc+'%"></i></div>'
+   +'<div class="hint">Rough guesses. '+(lc.t?'':'No calories counted yet. ')+(lc.miss?lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number. ':'')+'The target can be changed in Make it yours.</div>'}
+ h+=calTop;
  foods.forEach(function(g){
   if(!g.items.length)return;
   var gst='--k:'+g.c+';--kl:'+g.l+';--kt:#fff';
@@ -590,10 +599,6 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
      :'<button class="fp" data-a="fplus" data-v="'+esc(n)+'" aria-label="Add '+esc(fmtQ(u.st,n))+' of '+esc(n)+'"><em>+</em></button></div>');
   }).join('')+'</div>';
  });
-  if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=Math.min(100,Math.round(lc.t/tg*100));
-   h+='<div class="tg"><div><b>'+tg+'</b><small>Target</small></div><div><b>'+lc.t+(lc.miss?'+':'')+'</b><small>Eaten</small></div><div class="lf'+(lft<0?' over':'')+'"><b>'+Math.abs(lft)+'</b><small>'+(lft<0?'Over':'Left')+'</small></div></div>'
-   +'<div class="pbar'+(lft<0?' over':'')+'" role="img" aria-label="'+pc+' percent of the target"><i style="width:'+pc+'%"></i></div>'
-   +'<div class="hint">Rough guesses. '+(lc.t?'':'No calories counted yet. ')+(lc.miss?lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number. ':'')+'The target can be changed in Make it yours.</div>'}
  h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Something else</div><div class="row"><input type="text" id="atext" placeholder="type what you ate"></div><div class="row"><input type="text" id="aamt" placeholder="how much, like 2 oz or ½ cup"></div>';
  h+='<div class="row"><span class="lbl" style="width:auto">Keep it under</span><select class="pick" id="keepgrp">'+foods.map(function(g,k){return '<option value="'+k+'">'+g.n+'</option>'}).join('')+'</select></div>';
  h+='<button class="big pale" data-a="addate">Add this once</button><button class="big" data-a="keepfood">Add it and keep it as a button</button></div>';
