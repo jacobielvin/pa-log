@@ -179,9 +179,9 @@ var ITEMS={
  'Banana':{t:'count',u:'banana',p:'bananas',st:0.5,c:105,d:1,s:'1 medium, typical value'},
  'Strawberries':{t:'cup',st:0.5,c:50,d:1,s:'typical value'},
  'Celery':{t:'count',u:'stalk',p:'stalks',st:1,c:10,d:1,s:'typical value'},
- 'Pepsi':{t:'cup',st:0.5,c:100,d:1.5,s:'12 oz can = 150, so 100 per cup. A can is 1\u00BD cups'},
- 'Coke':{t:'cup',st:0.5,c:93.3,d:1.5,s:'12 oz can = 140, so about 93 per cup. A can is 1\u00BD cups'},
- 'H-E-B Cola':{t:'cup',st:0.5,c:113.3,d:1.5,s:'12 oz can = 170, so about 113 per cup. A can is 1\u00BD cups. The cane sugar pack says 180 per can'},
+ 'Pepsi':{t:'oz',st:20,c:12.5,d:12,s:'150 per 12 oz can, so 12.5 per oz. A 20 oz bottle is 250, a 16.9 oz bottle is about 211'},
+ 'Coke':{t:'oz',st:20,c:11.7,d:12,s:'140 per 12 oz can, so about 11.7 per oz. A 20 oz bottle is about 233, a 16.9 oz bottle is about 197'},
+ 'H-E-B Cola':{t:'oz',st:20,c:14.2,d:12,s:'170 per 12 oz can, so about 14.2 per oz. A 20 oz bottle is about 283, a 16.9 oz bottle is about 239. The cane sugar pack says 180 per can'},
  '2% milk':{t:'cup',st:0.5,c:120,d:1,s:'typical value'},
  'Hot cocoa (Keurig)':{t:'cup',st:0.5,c:80,d:1,s:'a guess, depends on the brand'},
  'Salad':{t:'cup',st:0.5,c:20,d:1,s:'mixed greens, about 15 to 20 per cup. Dressing is not included'},
@@ -247,6 +247,7 @@ function unitOf(n){var k=itemKey(n),b=k?ITEMS[k]:inferBase(n);
  if(ov&&ov!==b.t){r.t=ov;r.u=NOUN[ov][0];r.p=NOUN[ov][1];r.st=DSTEP[ov];r.c=null;r.d=1;r.s=''}
  if(Object.prototype.hasOwnProperty.call(ustep,n))r.st=ustep[n];
  return r}
+function stepOpts(n){var u=unitOf(n),l=STEPS.slice();if(u.t==='oz')l=l.concat([12,16.9,20]);if(l.indexOf(u.st)<0)l.push(u.st);return l.sort(function(a,b){return a-b})}
 function unitChoices(n){var k=itemKey(n),b=k?ITEMS[k]:inferBase(n),l=[['cup','cups'],['oz','ounces'],['tbsp','tablespoons'],['tsp','teaspoons']];
  if(n&&b.t==='count')l.push(['count',b.p||NOUN.count[1]]);return l}
 function calOf(n){if(Object.prototype.hasOwnProperty.call(ucal,n))return ucal[n];var c=unitOf(n).c;return c===undefined?null:c}
@@ -602,7 +603,7 @@ h+='<div class="card" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food 
     +'<button class="small" data-a="fup" data-v="'+gi+'|'+ii+'" aria-label="Move up">↑</button><button class="small" data-a="fdn" data-v="'+gi+'|'+ii+'" aria-label="Move down">↓</button>'
     +'<button class="small del" data-a="fdel" data-v="'+gi+'|'+ii+'">Remove</button></div>'
     +'<div class="row"><span class="lbl" style="width:auto">Measured in</span><select class="pick" data-ed="funit" data-g="'+gi+'" data-i="'+ii+'" aria-label="Measured in">'+unitChoices(n).map(function(t){return '<option value="'+t[0]+'"'+(unitOf(n).t===t[0]?' selected':'')+'>'+t[1]+'</option>'}).join('')+'</select></div>'
-    +'<div class="row"><span class="lbl" style="width:auto">Each tap adds</span><select class="pick" data-ed="fstep" data-g="'+gi+'" data-i="'+ii+'" aria-label="Each tap adds">'+(STEPS.indexOf(unitOf(n).st)<0?STEPS.concat([unitOf(n).st]):STEPS).map(function(sv){return '<option value="'+sv+'"'+(unitOf(n).st===sv?' selected':'')+'>'+frac(sv)+' '+(sv>1?unitOf(n).p:unitOf(n).u)+'</option>'}).join('')+'</select></div>'
+    +'<div class="row"><span class="lbl" style="width:auto">Each tap adds</span><select class="pick" data-ed="fstep" data-g="'+gi+'" data-i="'+ii+'" aria-label="Each tap adds">'+stepOpts(n).map(function(sv){return '<option value="'+sv+'"'+(unitOf(n).st===sv?' selected':'')+'>'+frac(sv)+' '+(sv>1?unitOf(n).p:unitOf(n).u)+'</option>'}).join('')+'</select></div>'
     +'<div class="row"><span class="lbl" style="width:auto">Calories per '+esc(unitOf(n).u)+'</span><input type="text" inputmode="numeric" class="calin" data-ed="fcal" data-g="'+gi+'" data-i="'+ii+'" value="'+(calOf(n)===null||calOf(n)===undefined?'':Math.round(calOf(n)))+'" placeholder="none" aria-label="Calories per unit"></div>'
     +((unitOf(n).s&&!Object.prototype.hasOwnProperty.call(ucal,n))?'<div class="hint">Source: '+esc(unitOf(n).s)+'.</div>':'')+'</div>';
   });
