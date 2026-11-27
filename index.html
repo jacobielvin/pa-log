@@ -443,6 +443,9 @@ function act(a,v){
  else if(a==='keepact'){keepAct=!keepAct}
  else if(a==='resetacts'){if(!actArm){actArm=true;render();toast('Tap the button again to put the original activities back');return}actArm=false;undoX={t:'acts',v:JSON.parse(JSON.stringify(acts))};acts=defaultActs();saveActs();render();toast('Original activities are back','undox');return}
  else if(a==='cleartoday'){if(!clrArm){clrArm=true;render();toast('Tap the button again to clear everything logged for this day');return}clrArm=false;undoX={t:'clear',d:date,v:JSON.parse(JSON.stringify(day))};day=blank();save();render();toast('Cleared this day','undox');return}
+ else if(a==='secmv'){var sp2=v.split('|');wr('pa-sorder',JSON.stringify(moveIn(secOrder(),sp2[0],parseInt(sp2[1],10))))}
+ else if(a==='grpmv'){var gp2=v.split('|');wr('pa-gorder',JSON.stringify(moveIn(grpOrder(),gp2[0],parseInt(gp2[1],10))))}
+ else if(a==='ordreset'){wr('pa-sorder','[]');wr('pa-gorder','[]')}
  else if(a==='fgtog'){if(fclosed[v])delete fclosed[v];else fclosed[v]=1;wr('pa-fclosed',JSON.stringify(fclosed))}
  else if(a==='togfood'){showFood=!showFood;wr('pa-showfood',showFood?'1':'0')}
  else if(a==='tgt'){wr('pa-target',String(Math.max(800,Math.min(4000,getTarget()+parseInt(v,10)))))}
@@ -481,7 +484,7 @@ function dashHtml(){
  function wdn(d){var p=d.split('-');return {w:new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString(undefined,{weekday:'short'}),n:+p[2]}}
  function cell(x,inner){return '<div class="dc'+(x.d===date?' sel':'')+'" role="button" tabindex="0" data-a="open" data-v="'+x.d+'">'+inner+'</div>'}
  function row(title,cls,fn){return '<div class="dt2">'+title+'</div><div class="dg'+(cls?' '+cls:'')+'">'+days.map(function(x){return cell(x,fn(x))}).join('')+'</div>'}
- var h='<div class="card dash" style="--ac:#c0392b"><h2>🎄 My week<small>The last 7 days. Tap a day to open it.</small></h2>';
+ var h='<div class="card dash" data-sec="week" style="--ac:#c0392b"><h2>🎄 My week<small>The last 7 days. Tap a day to open it.</small></h2>';
  h+=row('Plan color and coins spent','lights',function(x){
   var w=wdn(x.d),c=x.o.color;
   return '<span class="wd">'+w.w+'</span><span class="dn">'+w.n+'</span>'+(c?'<i class="bulb" style="--k:'+PCOL[c][0]+';--kt:'+PCOL[c][1]+'">'+c+'</i>':'<i class="bulb off">–</i>')+'<span class="sub">'+(c?x.sp+' of '+x.tot:'')+'</span>';
@@ -553,7 +556,7 @@ function render(){
  if(showFood&&showCal){var bl=getTarget()-logCal(day.log).t;h+='<div class="left" style="margin-top:4px">'+(bl>=0?fn(bl)+' calories left':fn(-bl)+' calories over')+' <small>(rough guess)</small></div>'}
  h+='</div>';
  /* check-in */
- h+='<div class="card" style="--ac:#c0392b"><h2>How are you?</h2>';
+ h+='<div class="card" data-sec="checkin" style="--ac:#c0392b"><h2>How are you?</h2>';
  h+='<div class="sbox"><div class="sh">Sleep</div><div class="row"><span class="lbl">Night</span>'+stepper('sleepH','hours')+'</div>';
  h+='<div class="row"><span class="lbl"></span>'+chips(['Poor','OK','Good'],day.sleepQ,'sleepQ',SLEEPQ,true,'sleepQ')+'</div>';
  h+='<div class="row"><span class="lbl">Nap</span>'+stepper('nap','hours')+'</div></div>';
@@ -563,7 +566,7 @@ function render(){
  h+='<div class="row"><span class="lbl">When</span><input type="text" id="pwn" placeholder="morning, after walking…" value="'+esc(day.painWhen)+'"></div>';
  h+='</div>';
  /* activities: only what the plan allows */
- h+='<div class="card" style="--ac:#f0c24d"><h2>I did something<small>Only what fits your coins left</small></h2>';
+ h+='<div class="card" data-sec="did" style="--ac:#f0c24d"><h2>I did something<small>Only what fits your coins left</small></h2>';
  function actBtn(a,cls){return '<button class="'+cls+'" data-nm="'+esc(a[0].toLowerCase())+'" style="'+ts(a[1])+'" data-a="did" data-v="'+esc(a[0]+'|'+a[1])+'"><span>'+esc(cls==='q'&&a[3]?a[3]:a[0])+'</span><b>'+a[1]+'</b></button>'}
  var freeA=acts.filter(function(a){return a[1]===0});
  var freeHtml=freeA.length?'<div class="tier" style="'+ts(0)+'">Free</div><div class="qgrid">'+freeA.map(function(a){return actBtn(a,'q')}).join('')+'</div>':'';
@@ -589,14 +592,14 @@ function render(){
  h+='</div>';
  /* ate */
  if(showFood){
-h+='<div class="card" id="foodcard" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food to add the amount shown. Tap the \u2212 to take that amount back off.</small></h2>';
+h+='<div class="card" id="foodcard" data-sec="ate" style="--ac:#2f7d46"><h2>I ate something<small>Tap a food to add the amount shown. Tap the \u2212 to take that amount back off.</small></h2>';
 var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=Math.min(100,Math.round(lc.t/tg*100));
    calTop+='<div class="tg"><div><b>'+fn(tg)+'</b><small>Target</small></div><div><b>'+fn(lc.t)+(lc.miss?'+':'')+'</b><small>Eaten</small></div><div class="lf'+(lft<0?' over':'')+'"><b>'+fn(Math.abs(lft))+'</b><small>'+(lft<0?'Over':'Left')+'</small></div></div>'
    +'<div class="pbar'+(lft<0?' over':'')+'" role="img" aria-label="'+pc+' percent of the target"><i style="width:'+pc+'%"></i></div>'
    +'<div class="hint">Rough guesses. '+(lc.t?'':'No calories counted yet. ')+(lc.miss?lc.miss+' item'+(lc.miss===1?' has':'s have')+' no calorie number. ':'')+'The target can be changed in Make it yours.</div>'}
  h+=calTop;
  h+='<div class="row"><input type="search" id="fsearch" class="srch" placeholder="Search foods and drinks" value="'+esc(fq)+'" aria-label="Search foods and drinks"></div><div class="hint nomatch" id="fnone" hidden>Nothing matches. Use Something else below to add it.</div>';
- foods.forEach(function(g){
+ orderedFoods().forEach(function(g){
   if(!g.items.length)return;
   var gst='--k:'+g.c+';--kl:'+g.l+';--kt:#fff',shut=!!fclosed[g.n];
   h+='<div class="fgw"><button class="tier tbtn" style="--k:'+g.c+';--kt:#fff" data-a="fgtog" data-v="'+esc(g.n)+'" aria-expanded="'+(!shut)+'">'+(shut?'\u25B8 ':'\u25BE ')+g.n+' ('+g.items.length+')</button><div class="qgrid foodgrid fgb'+(shut?' shut':'')+'">'+g.items.map(function(n){
@@ -617,19 +620,19 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  h+='<button class="big pale" data-a="addate">Add this once</button><button class="big" data-a="keepfood">Add it and keep it as a button</button></div>';
  }
  /* today so far */
- h+='<div class="card" style="--ac:#8e2a55"><h2>Today so far</h2>';
+ h+='<div class="card" data-sec="today" style="--ac:#8e2a55"><h2>Today so far</h2>';
  var ents=day.log.map(function(e,i){return [e,i]}).filter(function(x){return showFood||x[0].k!=='ate'}).sort(function(a,b){return a[0].t<b[0].t?-1:(a[0].t>b[0].t?1:a[1]-b[1])});
  if(!ents.length)h+='<div class="empty">Nothing yet</div>';
  ents.forEach(function(x){h+=entryHtml(x[0],x[1])});
  h+='</div>';
  /* energy */
- h+='<div class="card" style="--ac:#26804a"><h2>Energy<small>1 = wiped out, 5 = feeling good</small></h2>';
+ h+='<div class="card" data-sec="energy" style="--ac:#26804a"><h2>Energy<small>1 = wiped out, 5 = feeling good</small></h2>';
  ['Morning','Afternoon','Evening'].forEach(function(p){
   var ev=day.energy[p];h+='<div class="row" style="margin-bottom:2px"><span class="lbl" style="width:100%;display:flex;justify-content:space-between"><span>'+p+'</span><span class="rd">'+(ev?ENW[ev-1]:'')+'</span></span></div><div class="g5">'+[1,2,3,4,5].map(function(n){var cl=(ev&&n<ev?' lv':'')+(ev===n?' on':'');return '<button class="num'+cl+'" style="'+cs(ENERGYC[n-1])+'" data-g="energy-'+p+'" data-i="'+n+'" data-a="energy" data-v="'+p+'|'+n+'">'+n+'</button>'}).join('')+'</div>';
  });
  h+='</div>';
  /* end of day */
- h+='<div class="card" style="--ac:#c0392b"><h2>End of the day</h2>';
+ h+='<div class="card" data-sec="end" style="--ac:#c0392b"><h2>End of the day</h2>';
  h+='<div class="row"><span class="lbl">Gas</span><input type="text" id="gas" placeholder="ran out of gas at…" value="'+esc(day.gas)+'"></div>';
  h+='<div class="row"><span class="lbl">Crash?</span>'+chips(['No','Yes'],day.crash,'crash',CRASHC,false,null)+'</div>';
  h+='<a class="big" target="_blank" rel="noopener" href="'+esc(calUrl(date,day))+'">Save to my calendar</a>';
@@ -641,12 +644,12 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  for(var mk in mem){if(mk.indexOf('pa-log-')===0&&keys.indexOf(mk.slice(7))<0)keys.push(mk.slice(7))}
  keys.sort().reverse();keys=keys.slice(0,10);
  if(keys.length){
-  h+='<div class="card"><details><summary>Past days</summary>';
+  h+='<div class="card" data-sec="past"><details><summary>Past days</summary>';
   keys.forEach(function(d){var o=load(d);h+='<div class="past"><div style="min-width:0"><div class="pd">'+esc(pretty(d))+'</div><div class="ps">'+esc(summaryOf(o,d)+(calNote(o)?' \u00B7 '+calNote(o):''))+'</div></div><div style="display:flex;gap:6px;flex:none"><button class="small" data-a="open" data-v="'+d+'">Open</button><a class="small" style="display:flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="'+esc(calUrl(d,o))+'">Cal</a></div></div>'});
   h+='</details></div>';
  }
  /* settings */
- h+='<div class="card"><details><summary>Coin numbers</summary>';
+ h+='<div class="card" data-sec="coins"><details><summary>Coin numbers</summary>';
  ['R','Y','G'].forEach(function(c){h+='<div class="row"><span class="lbl">'+CN[c]+'</span><span class="stepper"><button data-a="cfg" data-v="'+c+'|-1">−</button><span>'+cfg[c]+' coins</span><button data-a="cfg" data-v="'+c+'|1">+</button></span></div>'});
  h+='<div class="row"><button class="small" data-a="cfgall" data-v="1">Add 1 to each color</button><button class="small" style="border-color:#c0392b;color:#c0392b" data-a="cfgall" data-v="-1">Take 1 off each color</button></div>';
  h+='<div class="hint">Add 1 after 2 weeks with no crashes. Take 1 off right after 2 crashes in one week.</div></details></div>';
@@ -660,6 +663,11 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  h+='<div class="row"><span style="flex:1;font-weight:700">Calories: '+(showCal?'showing':'hidden')+'</span><button class="small" data-a="togcal">'+(showCal?'Hide them':'Show them')+'</button></div>';
  h+='<div class="row"><span style="flex:1;font-weight:700">Daily calorie target: '+getTarget()+'</span><button class="small" data-a="tgt" data-v="-100">\u2212 100</button><button class="small" data-a="tgt" data-v="100">+ 100</button></div>';
  h+='<div class="hint">2300 is a gentle starting point for slow weight loss, worked out from 68 years old, 6 ft 2, 250 lb and medium activity. It is an estimate, not a prescription. Change it to whatever the doctor or dietitian says.</div>';
+ h+='</details><details class="sub2"><summary>Order of sections</summary><div class="hint">Move the things Pa uses most to the top. Tap the arrows. Nothing is deleted.</div><div class="tier" style="--k:#5a4a3a;--kt:#fff">Sections on the page</div>';
+ var so=secOrder();so.forEach(function(k,ix){var nm=SECN.filter(function(x){return x[0]===k})[0][1];h+='<div class="row"><span style="flex:1;font-weight:700">'+nm+'</span><button class="small" data-a="secmv" data-v="'+k+'|-1" aria-label="Move '+nm+' up"'+(ix===0?' disabled':'')+'>\u25B2</button><button class="small" data-a="secmv" data-v="'+k+'|1" aria-label="Move '+nm+' down"'+(ix===so.length-1?' disabled':'')+'>\u25BC</button></div>'});
+ h+='<div class="tier" style="--k:#5a4a3a;--kt:#fff">Food groups</div>';
+ var go=grpOrder();go.forEach(function(n,ix){h+='<div class="row"><span style="flex:1;font-weight:700">'+esc(n)+'</span><button class="small" data-a="grpmv" data-v="'+esc(n)+'|-1" aria-label="Move '+esc(n)+' up"'+(ix===0?' disabled':'')+'>\u25B2</button><button class="small" data-a="grpmv" data-v="'+esc(n)+'|1" aria-label="Move '+esc(n)+' down"'+(ix===go.length-1?' disabled':'')+'>\u25BC</button></div>'});
+ h+='<div class="row"><button class="small del" data-a="ordreset">Put the original order back</button></div>';
  h+='</details><details class="sub2"><summary>Food and drink buttons</summary>';
  foods.forEach(function(g,gi){
   if(!g.items.length)return;
@@ -697,7 +705,7 @@ var calTop='';if(showCal){var lc=logCal(day.log),tg=getTarget(),lft=tg-lc.t,pc=M
  app.className=day.color||'';
  var sy=window.pageYOffset;
  var openIdx=[];var ds2=document.querySelectorAll('details');for(var di=0;di<ds2.length;di++){if(ds2[di].open)openIdx.push(di)}
- app.innerHTML=h;
+ app.innerHTML=h;applySecOrder();
  var nd=document.querySelectorAll('details');openIdx.forEach(function(ix){if(nd[ix])nd[ix].open=true});
  window.scrollTo(0,sy);applyFilters();
  if(popG){var gl=document.querySelectorAll('[data-g="'+popG+'"]');for(var gi=0;gi<gl.length;gi++){var el=gl[gi];if(el.classList.contains('on')||el.classList.contains('lv')){el.classList.add('pop');el.style.animationDelay=(parseInt(el.getAttribute('data-i'),10)*30)+'ms'}}}
@@ -713,6 +721,17 @@ document.addEventListener('click',function(ev){
  var g=b.getAttribute('data-g');popG=g||null;popA=g?null:a;popV=b.getAttribute('data-v');curN=b.getAttribute('data-n')||'';
  act(a,b.getAttribute('data-v'));
 });
+var SECN=[['checkin','How are you?'],['did','I did something'],['ate','I ate something'],['today','Today so far'],['energy','Energy'],['end','End of the day'],['week','My week'],['past','Past days'],['coins','Coin numbers']];
+function jget(k,d){try{var v=JSON.parse(rd(k)||'null');return Array.isArray(v)?v:d}catch(e){return d}}
+function secOrder(){var sv=jget('pa-sorder',[]),keys=SECN.map(function(x){return x[0]}),o=sv.filter(function(k){return keys.indexOf(k)>-1});keys.forEach(function(k){if(o.indexOf(k)<0)o.push(k)});return o}
+function grpOrder(){var sv=jget('pa-gorder',[]),names=foods.map(function(g){return g.n}),o=sv.filter(function(n){return names.indexOf(n)>-1});names.forEach(function(n){if(o.indexOf(n)<0)o.push(n)});return o}
+function orderedFoods(){var o=grpOrder();return o.map(function(n){return foods.filter(function(g){return g.n===n})[0]})}
+function moveIn(arr,k,d){var i=arr.indexOf(k),j=i+d;if(i<0||j<0||j>=arr.length)return arr;arr.splice(i,1);arr.splice(j,0,k);return arr}
+function applySecOrder(){
+ var app2=document.getElementById('app'),kids=[].slice.call(app2.children),mv=kids.filter(function(n){return n.getAttribute&&n.getAttribute('data-sec')});
+ if(mv.length<2)return;
+ var ref=mv[mv.length-1].nextSibling,o=secOrder();
+ o.forEach(function(k){var n=mv.filter(function(m){return m.getAttribute('data-sec')===k})[0];if(n)app2.insertBefore(n,ref)})}
 function applyFilters(){
  var fc=document.getElementById('foodcard');
  if(fc){var q=fq.trim().toLowerCase(),any=false;fc.classList.toggle('fsearching',!!q);
